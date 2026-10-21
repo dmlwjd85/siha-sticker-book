@@ -3,7 +3,8 @@
   "spine": "4.2-like",
   "width": 720,
   "height": 1280,
-  "note": "y-down; Spine 로 옮길 때 y·rotation 부호 반대"
+  "stagePad": 80,
+  "note": "y-down; stagePad=무대 좌우 여백(px); Spine 로 옮길 때 y·rotation 부호 반대"
  },
  "bones": [
   {
@@ -287,6 +288,16 @@
    "bone": "head"
   },
   {
+   "name": "upperarm_l",
+   "bone": "upperarm_l",
+   "attachment": "upperarm_l"
+  },
+  {
+   "name": "upperarm_r",
+   "bone": "upperarm_r",
+   "attachment": "upperarm_r"
+  },
+  {
    "name": "bottom",
    "bone": "pelvis"
   },
@@ -295,9 +306,12 @@
    "bone": "chest"
   },
   {
-   "name": "upperarm_l",
-   "bone": "upperarm_l",
-   "attachment": "upperarm_l"
+   "name": "sleeve_l",
+   "bone": "upperarm_l"
+  },
+  {
+   "name": "sleeve_r",
+   "bone": "upperarm_r"
   },
   {
    "name": "forearm_l",
@@ -310,11 +324,6 @@
    "attachment": "hand_l"
   },
   {
-   "name": "upperarm_r",
-   "bone": "upperarm_r",
-   "attachment": "upperarm_r"
-  },
-  {
    "name": "forearm_r",
    "bone": "forearm_r",
    "attachment": "forearm_r"
@@ -323,14 +332,6 @@
    "name": "hand_r",
    "bone": "hand_r",
    "attachment": "hand_r"
-  },
-  {
-   "name": "sleeve_l",
-   "bone": "upperarm_l"
-  },
-  {
-   "name": "sleeve_r",
-   "bone": "upperarm_r"
   },
   {
    "name": "hair_front",
@@ -406,8 +407,8 @@
      }
     },
     "socks_l": {
-     "outfit_socks_shin_l": {
-      "path": "parts/outfit_socks_shin_l.png",
+     "basic_socks_shin_l": {
+      "path": "parts/basic_socks_shin_l.png",
       "x": 240,
       "y": 1040,
       "width": 67,
@@ -415,8 +416,8 @@
      }
     },
     "socks_r": {
-     "outfit_socks_shin_r": {
-      "path": "parts/outfit_socks_shin_r.png",
+     "basic_socks_shin_r": {
+      "path": "parts/basic_socks_shin_r.png",
       "x": 411,
       "y": 1069,
       "width": 76,
@@ -424,8 +425,8 @@
      }
     },
     "shoes_l": {
-     "outfit_shoes_foot_l": {
-      "path": "parts/outfit_shoes_foot_l.png",
+     "basic_shoes_foot_l": {
+      "path": "parts/basic_shoes_foot_l.png",
       "x": 231,
       "y": 1142,
       "width": 75,
@@ -433,8 +434,8 @@
      }
     },
     "shoes_r": {
-     "outfit_shoes_foot_r": {
-      "path": "parts/outfit_shoes_foot_r.png",
+     "basic_shoes_foot_r": {
+      "path": "parts/basic_shoes_foot_r.png",
       "x": 412,
       "y": 1142,
       "width": 75,
@@ -486,24 +487,6 @@
       "height": 97
      }
     },
-    "bottom": {
-     "outfit_bottom_pelvis": {
-      "path": "parts/outfit_bottom_pelvis.png",
-      "x": 120,
-      "y": 558,
-      "width": 389,
-      "height": 243
-     }
-    },
-    "top": {
-     "outfit_top_chest": {
-      "path": "parts/outfit_top_chest.png",
-      "x": 210,
-      "y": 336,
-      "width": 297,
-      "height": 229
-     }
-    },
     "upperarm_l": {
      "upperarm_l": {
       "path": "parts/upperarm_l.png",
@@ -511,6 +494,51 @@
       "y": 337,
       "width": 140,
       "height": 195
+     }
+    },
+    "upperarm_r": {
+     "upperarm_r": {
+      "path": "parts/upperarm_r.png",
+      "x": 395,
+      "y": 337,
+      "width": 140,
+      "height": 198
+     }
+    },
+    "bottom": {
+     "basic_bottom_pelvis": {
+      "path": "parts/basic_bottom_pelvis.png",
+      "x": 207,
+      "y": 518,
+      "width": 302,
+      "height": 276
+     }
+    },
+    "top": {
+     "basic_top_chest": {
+      "path": "parts/basic_top_chest.png",
+      "x": 191,
+      "y": 298,
+      "width": 338,
+      "height": 307
+     }
+    },
+    "sleeve_l": {
+     "basic_sleeve_upperarm_l": {
+      "path": "parts/basic_sleeve_upperarm_l.png",
+      "x": 210,
+      "y": 340,
+      "width": 93,
+      "height": 214
+     }
+    },
+    "sleeve_r": {
+     "basic_sleeve_upperarm_r": {
+      "path": "parts/basic_sleeve_upperarm_r.png",
+      "x": 418,
+      "y": 341,
+      "width": 101,
+      "height": 176
      }
     },
     "forearm_l": {
@@ -531,15 +559,6 @@
       "height": 115
      }
     },
-    "upperarm_r": {
-     "upperarm_r": {
-      "path": "parts/upperarm_r.png",
-      "x": 395,
-      "y": 337,
-      "width": 140,
-      "height": 198
-     }
-    },
     "forearm_r": {
      "forearm_r": {
       "path": "parts/forearm_r.png",
@@ -558,24 +577,6 @@
       "height": 113
      }
     },
-    "sleeve_l": {
-     "outfit_sleeve_upperarm_l": {
-      "path": "parts/outfit_sleeve_upperarm_l.png",
-      "x": 210,
-      "y": 340,
-      "width": 93,
-      "height": 103
-     }
-    },
-    "sleeve_r": {
-     "outfit_sleeve_upperarm_r": {
-      "path": "parts/outfit_sleeve_upperarm_r.png",
-      "x": 418,
-      "y": 341,
-      "width": 89,
-      "height": 102
-     }
-    },
     "hair_front": {
      "hair_front": {
       "path": "parts/hair_front.png",
@@ -590,14 +591,14 @@
  ],
  "outfits": {
   "basic": {
-   "top": "outfit_top_chest",
-   "bottom": "outfit_bottom_pelvis",
-   "socks_l": "outfit_socks_shin_l",
-   "socks_r": "outfit_socks_shin_r",
-   "shoes_l": "outfit_shoes_foot_l",
-   "shoes_r": "outfit_shoes_foot_r",
-   "sleeve_l": "outfit_sleeve_upperarm_l",
-   "sleeve_r": "outfit_sleeve_upperarm_r"
+   "bottom": "basic_bottom_pelvis",
+   "sleeve_l": "basic_sleeve_upperarm_l",
+   "sleeve_r": "basic_sleeve_upperarm_r",
+   "top": "basic_top_chest",
+   "socks_l": "basic_socks_shin_l",
+   "shoes_l": "basic_shoes_foot_l",
+   "socks_r": "basic_socks_shin_r",
+   "shoes_r": "basic_shoes_foot_r"
   }
  },
  "accessories": [
@@ -683,12 +684,20 @@
        "value": 0
       },
       {
-       "time": 0.4,
-       "value": -75
+       "time": 0.25,
+       "value": 0
       },
       {
-       "time": 1.2,
-       "value": -75
+       "time": 0.5,
+       "value": -35.0
+      },
+      {
+       "time": 1.15,
+       "value": -35.0
+      },
+      {
+       "time": 1.4,
+       "value": 0
       },
       {
        "time": 1.6,
@@ -703,24 +712,28 @@
        "value": 0
       },
       {
-       "time": 0.4,
-       "value": -40
+       "time": 0.25,
+       "value": -108.0
       },
       {
        "time": 0.6,
-       "value": -15
+       "value": -130.0
       },
       {
        "time": 0.8,
-       "value": -40
+       "value": -108.0
       },
       {
        "time": 1.0,
-       "value": -15
+       "value": -130.0
       },
       {
-       "time": 1.2,
-       "value": -40
+       "time": 1.15,
+       "value": -108.0
+      },
+      {
+       "time": 1.4,
+       "value": -108.0
       },
       {
        "time": 1.6,

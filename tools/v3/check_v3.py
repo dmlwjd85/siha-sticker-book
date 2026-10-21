@@ -65,3 +65,68 @@ tiles=[]
 for nm,(x,y) in crops:
     c=img[max(0,y-30):y+30,max(0,x-30):x+30]; c=cv2.resize(c,(240,240),interpolation=cv2.INTER_NEAREST); tiles.append(c)
 sheet=np.vstack([np.hstack(tiles[:4]),np.hstack(tiles[4:])]); Image.fromarray(sheet).save(f'{OUT}/crops400.png')
+
+# 흰 테두리 검사: 치마·소매 조각 가장자리 2px 안에 밝은(흰) 픽셀 비율
+fr={}
+for sl in ('bottom','sleeve_l','sleeve_r','top'):
+    im=np.array(Image.open(f"{D}/{skin[sl][sk['outfits']['basic'][sl]]['path']}").convert('RGBA')).astype(int)
+    al=im[...,3]>40; ring=al&~ndimage.binary_erosion(al,iterations=2)
+    fr[sl]=round(float(((im[...,:3].min(-1)>235)&ring).sum()/max(ring.sum(),1)),4)
+res['fringe_white_ratio']=fr; res['fringe_ok']=max(fr.values())<0.01
+# ── 손 흔들기 프레임 검사: 모든 프레임을 그려 이음새(옷 밑 흰 민소매가 드러남 + 구멍)를 센다 ──
+def world(pose):
+    out={}
+    for bn in sk['bones']:
+        p=pose.get(bn['name'],{}); jx,jy=bn['rest']['x'],bn['rest']['y']; r=np.radians(p.get('rotate',0)); c,s_=np.cos(r),np.sin(r)
+        M=np.array([[c,-s_,jx-c*jx+s_*jy],[s_,c,jy-s_*jx-c*jy],[0,0,1]])
+        out[bn['name']]=out[bn['parent']]@M if bn.get('parent') else M
+    return out
+def keys(k,t):
+    if t<=k[0]['time']: return k[0]['value']
+    for a,b2 in zip(k,k[1:]):
+        if t<=b2['time']: u=(t-a['time'])/(b2['time']-a['time']); u=0.5-np.cos(u*np.pi)/2; return a['value']+(b2['value']-a['value'])*u
+    return k[-1]['value']
+LAYERS={}
+def render(pose, mark_under=False, hair=True):
+    Wd=world(pose); c=np.zeros((H,W,4),np.float32); fit=sk['outfits']['basic']
+    for s in sk['slots']:
+        n=s.get('attachment')
+        if s['name'] in ('top','bottom','eyes') or s['name'].startswith(('socks','shoes','sleeve')): n=fit.get(s['name'])
+        if not n or (not hair and s['name'].startswith('hair')): continue
+        key=(s['name'],n)
+        if key not in LAYERS: LAYERS[key]=layer(s['name'],skin[s['name']][n])
+        L=LAYERS[key].astype(np.float32).copy()
+        if mark_under and s['name'] in ('chest','neck','upperarm_l','upperarm_r'):
+            u=(L[...,:3].min(-1)>232)&(np.ptp(L[...,:3],axis=-1)<16)&(L[...,3]>128); L[u,:3]=[255,0,255]
+        M=Wd[s['bone']][:2]; L[...,:3]*=L[...,3:]/255  # 미리 곱한 알파로 돌려야 가장자리에 검은 줄이 안 생김(캔버스와 같음)
+        L=cv2.warpAffine(L,M,(W,H),flags=cv2.INTER_LINEAR)
+        a=L[...,3:]/255; c[...,:3]=L[...,:3]+c[...,:3]*(1-a); c[...,3:]=a*255+c[...,3:]*(1-a)
+    return c
+BODY=ndimage.binary_dilation(A,iterations=0) if ref is None else (ref[...,3]>128)  # 머리카락 사이 틈은 빼고 몸 안 구멍만
+PAD=sk['skeleton'].get('stagePad',0)
+wv=sk['animations']['wave']; frames=[]; worst=0
+for t in np.linspace(0,wv['period'],25):
+    pose={bn:{'rotate':keys(tl['rotate'],t)} for bn,tl in wv['bones'].items()}
+    ch=render(pose,True)  # 드러난 민소매는 머리카락까지 그린 뒤(머리카락에 가려지면 안 보임)
+    mag=(np.abs(ch[...,0]-255)<40)&(ch[...,1]<90)&(np.abs(ch[...,2]-255)<40)&(ch[...,3]>128)
+    c=render(pose,True,hair=False); A2=c[...,3]>128  # 구멍은 머리카락 빼고(머리카락 틈은 이음새 아님)
+    # 손(손끝)이 무대 밖으로 나가면 안 됨
+    hb=world(pose)['hand_r']; tips=[(hb@np.array([x,y,1]))[:2] for x,y in ((634,716),(665,745),(600,745))]
+    res.setdefault('wave_hand_out',0); res['wave_hand_out']+=int(any(p[0]<-PAD or p[0]>W+PAD or p[1]<0 or p[1]>H for p in tips))
+    hole=ndimage.binary_fill_holes(A2)&~A2
+    hole=hole&~ndimage.binary_opening(hole,iterations=3)  # 이음새 = 가는 틈(두께 ≤6px). 팔과 몸 사이 넓은 빈 곳은 이음새 아님
+    seam=int(mag.sum()+hole[:650].sum()); worst=max(worst,seam); frames.append((t,seam,render(pose)))
+base=frames[0][1]; res['wave_frames']=len(frames); res['wave_seam_rest_px']=base; res['wave_seam_px_max']=worst; res['wave_seam_extra_px_max']=worst-base; res['wave_seam_ok']=worst-base<=6 and base<=10 and res['wave_hand_out']==0  # 쉬는 자세보다 더 벌어진 px
+json.dump(res,open(f'{OUT}/checks.json','w'),indent=1,ensure_ascii=False); print('wave seam max',worst)
+# 400% 시트에 흔들기 프레임(오른쪽 어깨 둘레) 추가 — 25 프레임 전부
+tiles=[]
+for t,seam,c in frames:
+    Wd=world({bn:{'rotate':keys(tl['rotate'],t)} for bn,tl in wv['bones'].items()})
+    a=c[...,3:]/255; im=(c[...,:3]*a+bg*(1-a)).astype(np.uint8); x,y=470,420
+    cr=im[y-60:y+60,x-60:x+60]; cr=cv2.resize(cr,(360,360),interpolation=cv2.INTER_NEAREST)
+    cv2.putText(cr,f't={t:.2f} seam={seam}',(6,22),cv2.FONT_HERSHEY_SIMPLEX,0.6,(110,61,91),2); tiles.append(cr)
+while len(tiles)%5: tiles.append(np.full_like(tiles[0],255))
+wsheet=np.vstack([np.hstack(tiles[i:i+5]) for i in range(0,len(tiles),5)])
+s0=np.array(Image.open(f'{OUT}/crops400.png'));pad=np.full((s0.shape[0],wsheet.shape[1]-s0.shape[1],3),255,np.uint8) if wsheet.shape[1]>s0.shape[1] else None
+top=np.hstack([s0,pad]) if pad is not None else s0
+Image.fromarray(np.vstack([top,wsheet])).save(f'{OUT}/crops400.png')

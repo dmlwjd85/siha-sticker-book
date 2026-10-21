@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;background:#fff7fb;font-family:system-ui,sans-serif;color:#6e3d5b;touch-action:manipulation}
   #wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px}
-  canvas{height:min(78vh,calc(94vw*16/9),924px);width:auto;aspect-ratio:720/1280;background:#fdeef6;border-radius:16px;touch-action:none;}
+  canvas{height:min(78vh,calc(94vw*1280/880),924px);width:auto;aspect-ratio:880/1280;background:#fdeef6;border-radius:16px;touch-action:none;}
   .bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
   button{font-size:16px;padding:10px 14px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
   button[aria-pressed=true]{background:#ffd9ea}
@@ -17,7 +17,7 @@
 <body>
 <div id="wrap">
   <h1>시하 v3 데모 · 뼈대 인형 <small>(실험용)</small></h1>
-  <canvas id="c" width="720" height="1280" aria-label="시하 인형"></canvas>
+  <canvas id="c" width="880" height="1280" aria-label="시하 인형"></canvas>
   <div class="bar">
     <button id="outfit" aria-pressed="true">옷 입기</button>
     <button id="wave">손 흔들기 👋</button>

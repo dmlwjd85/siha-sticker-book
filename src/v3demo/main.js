@@ -13,15 +13,20 @@ function loadState() {
 let state = loadState()
 const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 const skel = await (await fetch(BASE + 'skeleton.json')).json()
+const PAD = skel.skeleton.stagePad || 0 // 무대 좌우 여백: 손을 흔들어도 손끝이 무대 안
+cv.width = skel.skeleton.width + PAD * 2
 const IM = {}
 for (const s of Object.values(skel.skins[0].attachments)) for (const a of Object.values(s)) IM[a.path] = await load(a.path)
 for (const a of skel.accessories) IM[a.path] = await load(a.path)
 const ACC_SCALE = 0.32
+export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 let waveStart = null, drag = null, world = {}
 function accRect(a, st) {
   const W = world[st.bone], [x, y] = apply(W, st.x, st.y), w = a.width * ACC_SCALE * (st.size || 1), h = a.height * ACC_SCALE * (st.size || 1)
   const rot = Math.atan2(W[1], W[0])
-  return { x, y, w, h, rot }
+  // 움직이는 동안에도 무대 안에: 돌아도 안 나가게 대각선 반만큼 안쪽으로 묶는다
+  const r = Math.hypot(w, h) / 2
+  return { x: clamp(x, r - PAD, cv.width - PAD - r), y: clamp(y, r, cv.height - r), w, h, rot }
 }
 function frame(ts) {
   const now = ts / 1000
@@ -31,20 +36,20 @@ function frame(ts) {
   g.clearRect(0, 0, cv.width, cv.height)
   for (const p of drawList(skel, { outfit: state.outfit, eyesClosed })) {
     const m = world[p.bone]
-    g.setTransform(m[0], m[1], m[2], m[3], m[4], m[5])
+    g.setTransform(m[0], m[1], m[2], m[3], m[4] + PAD, m[5])
     g.drawImage(IM[p.path], p.x, p.y, p.width, p.height)
   }
   for (const a of skel.accessories) {
     const st = state.accs[a.name]; if (!st) continue
     const r = accRect(a, st)
-    g.setTransform(Math.cos(r.rot), Math.sin(r.rot), -Math.sin(r.rot), Math.cos(r.rot), r.x, r.y)
+    g.setTransform(Math.cos(r.rot), Math.sin(r.rot), -Math.sin(r.rot), Math.cos(r.rot), r.x + PAD, r.y)
     g.drawImage(IM[a.path], -r.w / 2, -r.h / 2, r.w, r.h)
   }
   g.setTransform(1, 0, 0, 1, 0, 0)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)
-const toCanvas = (e) => { const b = cv.getBoundingClientRect(); return [((e.clientX - b.left) / b.width) * cv.width, ((e.clientY - b.top) / b.height) * cv.height] }
+const toCanvas = (e) => { const b = cv.getBoundingClientRect(); return [((e.clientX - b.left) / b.width) * cv.width - PAD, ((e.clientY - b.top) / b.height) * cv.height] }
 // 놓은 자리에서 가장 가까운 뼈에 붙인다(뼈 좌표로 저장 → 뼈가 움직이면 같이 움직임)
 function attach(name, x, y) {
   const bone = nearestBone(skel, x, y)
@@ -75,4 +80,4 @@ for (const a of skel.accessories) $(a.name).onclick = () => {
 }
 $('reset').onclick = () => { state = { v: 1, outfit: 'basic', accs: {} }; save(); sync() }
 sync()
-window.__v3 = { skel, get state() { return state }, STORAGE_KEY }
+window.__v3 = { skel, get state() { return state }, STORAGE_KEY, PAD, accBoxes: () => skel.accessories.filter((a) => state.accs[a.name]).map((a) => { const r = accRect(a, state.accs[a.name]); return { ...r, r: Math.hypot(r.w, r.h) / 2 } }) }
