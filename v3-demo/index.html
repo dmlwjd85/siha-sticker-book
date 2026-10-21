@@ -8,8 +8,9 @@
   html,body{margin:0;background:#fff7fb;font-family:system-ui,sans-serif;color:#6e3d5b;touch-action:manipulation}
   #wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px}
   canvas{height:min(78vh,calc(94vw*1280/880),924px);width:auto;aspect-ratio:880/1280;background:#fdeef6;border-radius:16px;touch-action:none;}
-  .bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-  button{font-size:16px;padding:10px 14px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
+  /* 버튼 한 줄: 폭을 똑같이 나눠 줄바꿈 없음 */
+  .bar{display:flex;flex-wrap:nowrap;gap:6px;justify-content:center;width:min(96vw,560px)}
+  button{flex:1 1 0;min-width:0;white-space:nowrap;font-size:clamp(13px,3.6vw,16px);padding:10px 4px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
   button[aria-pressed=true]{background:#ffd9ea}
   h1{font-size:16px;margin:4px}
 </style>
@@ -20,7 +21,7 @@
   <canvas id="c" width="880" height="1280" aria-label="시하 인형"></canvas>
   <div class="bar">
     <button id="outfit" aria-pressed="true">옷 입기</button>
-    <button id="wave">손 흔들기 👋</button>
+    <button id="wave">👋 흔들기</button>
     <button id="acc_ribbon" aria-pressed="false">리본</button>
     <button id="acc_star" aria-pressed="false">별 핀</button>
     <button id="reset">처음대로</button>

@@ -30,11 +30,11 @@ function accRect(a, st) {
 }
 function frame(ts) {
   const now = ts / 1000
-  const { pose, eyesClosed, waving } = samplePose(skel, now, { waveStart })
+  const { pose, eyesClosed, waving, waveUp } = samplePose(skel, now, { waveStart })
   if (!waving && waveStart != null && now - waveStart > 0) waveStart = null
   world = worldTransforms(skel, pose)
   g.clearRect(0, 0, cv.width, cv.height)
-  for (const p of drawList(skel, { outfit: state.outfit, eyesClosed })) {
+  for (const p of drawList(skel, { outfit: state.outfit, eyesClosed, waveUp })) {
     const m = world[p.bone]
     g.setTransform(m[0], m[1], m[2], m[3], m[4] + PAD, m[5])
     g.drawImage(IM[p.path], p.x, p.y, p.width, p.height)
@@ -73,7 +73,8 @@ function sync() {
 }
 $('outfit').onclick = () => { state.outfit = state.outfit === 'basic' ? null : 'basic'; save(); sync() }
 $('wave').onclick = () => { waveStart = performance.now() / 1000 }
-const DEFAULT = { acc_ribbon: [300, 70], acc_star: [430, 120] }
+// 기본 자리: 앞머리 위(눈썹·눈을 가리지 않음). y≈55 가 머리 꼭대기, 눈썹은 y≈150
+const DEFAULT = { acc_ribbon: [290, 78], acc_star: [446, 84] }
 for (const a of skel.accessories) $(a.name).onclick = () => {
   if (state.accs[a.name]) delete state.accs[a.name]; else attach(a.name, ...DEFAULT[a.name])
   save(); sync()

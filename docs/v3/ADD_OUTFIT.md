@@ -15,3 +15,7 @@
 5. 390px 폰과 1280px 에서 손 흔들기까지 보고 PR.
 
 Spine 으로 옮기기: `skeleton.json` 은 Spine JSON 모양(bones/slots/skins/animations). y 가 아래로 가므로 Spine 에선 y 와 rotation 부호를 뒤집는다.
+
+## 손 흔들기 그림까지 함께 넣기
+`--outfit 이름=옷.jpg,옷_흔들기.jpg` 처럼 쉼표 뒤에 "오른팔을 든" 옷 그림을 주면 흔들기 동작의 팔 조각(arm_up_r)도 그 옷으로 바뀝니다.
+기본값: `basic=outfit_lines.jpg,outfit_wave.jpg`, 바탕 `body_lines_raw.jpg`, 흔들기 바탕 `body_wave.jpg`.

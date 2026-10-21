@@ -12,17 +12,18 @@ export function samplePose(skel, now, { waveStart = null } = {}) {
   const br = A.breathe, tb = now % br.period
   pose.chest = { sy: lerpKeys(br.bones.chest.scale, tb, 'y') }
   pose.head = { y: lerpKeys(br.bones.head.translate, tb, 'y') }
-  let waving = false
+  let waving = false, waveUp = false
   if (waveStart != null) {
     const tw = now - waveStart, w = A.wave
     if (tw >= 0 && tw < w.period * 2) {
       waving = true
       const t = tw % w.period
       for (const [bone, tl] of Object.entries(w.bones)) pose[bone] = { ...(pose[bone] || {}), rotate: lerpKeys(tl.rotate, t, 'value') }
+      waveUp = !w.swap || (t >= w.swap.on && t < w.swap.off)
     }
   }
   const bk = A.blink.slots.eyes.attachment, t = now % A.blink.period
   let name = null
   for (const k of bk) if (t >= k.time) name = k.name
-  return { pose, eyesClosed: name === 'eyes_closed', waving }
+  return { pose, eyesClosed: name === 'eyes_closed', waving, waveUp }
 }

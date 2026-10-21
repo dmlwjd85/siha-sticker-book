@@ -30,8 +30,13 @@ export function drawList(skel, state) {
   const skin = skel.skins[0].attachments
   const fit = skel.outfits[state.outfit] || null
   const list = []
+  const swap = skel.animations?.wave?.swap
   for (const s of skel.slots) {
+    // 손 흔들기 자세: 내린 팔 조각을 숨기고 든 팔(소매 포함 한 장)을 보인다
+    if (swap && state.waveUp && swap.hide.includes(s.name)) continue
+    if (swap && !state.waveUp && swap.show.includes(s.name)) continue
     let name = s.attachment || null
+    if (s.name === 'arm_up_r' && fit && fit.arm_up_r) name = fit.arm_up_r
     if (s.name === 'eyes') name = state.eyesClosed ? 'eyes_closed' : null
     if (fit && fit[s.name]) name = fit[s.name]
     if (s.name === 'top' || s.name === 'bottom' || s.name.startsWith('socks') || s.name.startsWith('shoes') || s.name.startsWith('sleeve')) name = fit ? fit[s.name] : null

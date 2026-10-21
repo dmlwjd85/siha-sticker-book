@@ -1,180 +1,208 @@
-"""siha v3 데모 파이프라인: GenerateImage 원본(raw/*.jpg) → 배경 제거·정렬·뼈별 자르기·검사 → public/v3-demo/
-코드는 그림을 그리지 않는다: 배경 제거, 정렬(ECC), 자르기(뼈 영역 + 관절 겹침), 검사만 한다."""
-import json, os, sys, math
+"""siha v3 조각 파이프라인 (그림은 전부 GenerateImage; 코드는 배경 지우기·정렬·자르기·검사만)
+사용:
+  python3 build_v3.py [raw] [out] [--base 파일] [--eyes 파일] [--hair 파일] [--accs 파일]
+                      [--outfit 이름=파일 ...] [--config outfits.json]
+기준(캐논) = raw/canon.jpg. 다른 그림은 모두 캐논에 정렬(ECC 아핀)해서 같은 좌표로 맞춘다."""
+import json, os, sys, shutil, argparse
 import numpy as np, cv2
 from PIL import Image
 from scipy import ndimage
 HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 from rmbg import rmbg
-import argparse
-ap=argparse.ArgumentParser(description='v3 조각 파이프라인')
+ap=argparse.ArgumentParser()
 ap.add_argument('raw',nargs='?',default=os.path.join(HERE,'raw')); ap.add_argument('out',nargs='?',default=os.path.join(HERE,'out'))
-ap.add_argument('--outfit',action='append',metavar='이름=파일.jpg',help='옷 한 벌(여러 번 가능). 기본: basic=outfit.jpg')
-ap.add_argument('--config',help='JSON: {"outfits": {"이름": "파일.jpg", ...}}')
-args=ap.parse_args(); RAW=args.raw; OUT=args.out
+ap.add_argument('--base',default='body_lines_raw.jpg',help='맨몸(굵은 선) 그림')
+ap.add_argument('--eyes',default='eyes_closed_lines.jpg'); ap.add_argument('--hair',default='hair_lines.jpg'); ap.add_argument('--accs',default='accs.jpg')
+ap.add_argument('--base_wave',default='body_wave.jpg',help='맨몸 손 흔드는 자세(오른쪽 팔만 다름)')
+ap.add_argument('--outfit',action='append',metavar='이름=파일 또는 이름=파일,흔들기파일'); ap.add_argument('--config')
+args=ap.parse_args(); RAW,OUT=args.raw,args.out
 OUTFITS={}
 if args.config: OUTFITS.update(json.load(open(args.config)).get('outfits',{}))
 for o in args.outfit or []: k,v=o.split('=',1); OUTFITS[k]=v
-if not OUTFITS: OUTFITS={'basic':'outfit.jpg'}
-import shutil; shutil.rmtree(f'{OUT}/parts',ignore_errors=True); os.makedirs(f'{OUT}/parts',exist_ok=True)
-OVERLAP=6   # 조각마다 5px 씩 → 관절 겹침 합 ≈10px (8~12)
-def L(n): return np.array(Image.open(n if os.path.isabs(n) else f'{RAW}/{n if n.endswith((".jpg",".png")) else n+".jpg"}').convert('RGB')).astype(np.float32)
+if not OUTFITS: OUTFITS={'basic':'outfit_lines.jpg,outfit_wave.jpg'}
+shutil.rmtree(f'{OUT}/parts',ignore_errors=True); os.makedirs(f'{OUT}/parts'); TMP=f'{OUT}/_tmp'; os.makedirs(TMP,exist_ok=True)
+W,H=720,1280; OVERLAP=6; HAND_SCALE=0.88
+P_=lambda n: n if os.path.isabs(n) else f'{RAW}/{n}'
 
-# 뼈: 이름, 부모, 시작점(관절), 끝점 — 캔버스(720x1280) 좌표, y 아래로
+# 뼈: 이름, 부모, 시작(관절·회전축), 끝. 윗팔 회전축은 어깨 안쪽(겨드랑이 위)으로.
 BONES=[('root',None,(359,711),(359,711)),
  ('pelvis','root',(359,711),(359,591)),('chest','pelvis',(359,591),(359,361)),('neck','chest',(359,351),(359,296)),('head','neck',(359,301),(359,101)),
- ('upperarm_l','chest',(278,361),(210,513)),('forearm_l','upperarm_l',(210,513),(148,626)),('hand_l','forearm_l',(148,626),(103,716)),
- ('upperarm_r','chest',(442,361),(515,513)),('forearm_r','upperarm_r',(515,513),(578,626)),('hand_r','forearm_r',(578,626),(634,716)),
+ ('upperarm_l','chest',(290,372),(210,513)),('forearm_l','upperarm_l',(210,513),(148,626)),('hand_l','forearm_l',(148,626),(103,716)),
+ ('upperarm_r','chest',(430,372),(515,513)),('forearm_r','upperarm_r',(515,513),(578,626)),('hand_r','forearm_r',(578,626),(634,716)),
  ('thigh_l','pelvis',(301,694),(284,943)),('shin_l','thigh_l',(284,943),(272,1146)),('foot_l','shin_l',(272,1146),(264,1211)),
  ('thigh_r','pelvis',(419,694),(425,943)),('shin_r','thigh_r',(425,943),(448,1146)),('foot_r','shin_r',(448,1146),(454,1211))]
-B={b[0]:b for b in BONES}
-DRAW=['hair_back','thigh_l','thigh_r','shin_l','shin_r','foot_l','foot_r','pelvis','chest','neck','head','eyes',
-      'upperarm_l','forearm_l','hand_l','upperarm_r','forearm_r','hand_r','hair_front']
+# 손 흔들기 자세(그림을 갈아 끼움): 팔꿈치 회전축, 손목 쪽 끝
+WAVE_ELBOW=(535,500); WAVE_HAND=(605,280); WAVE_SHOULDER=(440,392)
+BONES.append(('arm_up_r','chest',WAVE_SHOULDER,WAVE_HAND))
+J={b[0]:b[2] for b in BONES}
 
-def align(src, ref):
-    """ECC 아핀 정렬(같은 구도로 생성한 이미지의 미세한 어긋남 보정)."""
-    g1=cv2.cvtColor(ref.astype(np.uint8),cv2.COLOR_RGB2GRAY).astype(np.float32); g2=cv2.cvtColor(src.astype(np.uint8),cv2.COLOR_RGB2GRAY).astype(np.float32)
-    W=np.eye(2,3,dtype=np.float32)
-    try: _,W=cv2.findTransformECC(g1,g2,W,cv2.MOTION_AFFINE,(cv2.TERM_CRITERIA_EPS|cv2.TERM_CRITERIA_COUNT,200,1e-6),None,5)
+def gray(x): return cv2.cvtColor(x.astype(np.uint8),cv2.COLOR_RGB2GRAY).astype(np.float32)
+REF=np.array(Image.open(P_('canon.jpg')).convert('RGB').resize((W,H))).astype(np.float32)
+def load(name, ref=REF):
+    """생성 그림 → 720x1280 → 배경 지우기 → 캐논에 ECC 정렬. (rgb, rgba) 반환"""
+    im=Image.open(P_(name)).convert('RGB').resize((W,H),Image.LANCZOS); tp=f'{TMP}/{os.path.basename(name)}.png'; im.save(tp)
+    rgb=np.array(im).astype(np.float32); rgba=rmbg(tp)
+    M=np.eye(2,3,dtype=np.float32)
+    try: _,M=cv2.findTransformECC(gray(ref),gray(rgb),M,cv2.MOTION_AFFINE,(cv2.TERM_CRITERIA_EPS|cv2.TERM_CRITERIA_COUNT,300,1e-6),None,5)
     except cv2.error: pass
-    return cv2.warpAffine(src,W,(ref.shape[1],ref.shape[0]),flags=cv2.INTER_LINEAR+cv2.WARP_INVERSE_MAP,borderMode=cv2.BORDER_REPLICATE), W
+    f=cv2.INTER_LINEAR+cv2.WARP_INVERSE_MAP
+    rgb=cv2.warpAffine(rgb,M,(W,H),flags=f,borderMode=cv2.BORDER_REPLICATE)
+    rgba=cv2.warpAffine(rgba,M,(W,H),flags=f,borderMode=cv2.BORDER_CONSTANT,borderValue=0)
+    return rgb,rgba
 
-def segdist(P, a, b):
+def segdist(P,a,b):
     a=np.array(a,float); b=np.array(b,float); d=b-a; L2=max(d@d,1e-6)
     t=np.clip(((P-a)@d)/L2,0,1); q=a+t[...,None]*d; return np.hypot(*(P-q).transpose(2,0,1))
-
 def defringe(a, px=3):
-    """가장자리 px 안의 밝은(배경이 섞인) 색을 안쪽 색으로 바꾸고, 바깥 1px 은 반투명으로."""
+    """가장자리 px 안의 밝은(배경 섞인) 색을 안쪽 색으로 바꾼다(흰 테두리 제거)."""
     al=a[...,3]>8; inner=ndimage.binary_erosion(al,iterations=px)
     if not inner.any(): return a
     _,(iy,ix)=ndimage.distance_transform_edt(~inner,return_indices=True)
     ring=al&~inner; src=a[iy,ix,:3].astype(int); cur=a[...,:3].astype(int)
-    light=(cur.sum(-1)>src.sum(-1)+30)&ring
+    light=(cur.sum(-1)>src.sum(-1)+24)&ring
     a[...,:3][light]=src[light].astype(np.uint8)
-    edge=al&~ndimage.binary_erosion(al,iterations=1); a[...,3][edge]=(a[...,3][edge]*0.6).astype(np.uint8)
     return a
-def save_part(name, rgba, mask, bone, fringe=False):
-    m=mask.astype(np.float32)
-    a=rgba.copy(); a[...,3]=(a[...,3].astype(np.float32)*m).astype(np.uint8)
-    if fringe: a=defringe(a)
+def keep_big(m, min_px):
+    lb,n=ndimage.label(m)
+    if n==0: return m
+    sz=ndimage.sum(m,lb,range(1,n+1)); return np.isin(lb,[i+1 for i,s in enumerate(sz) if s>=min_px])
+def save_part(name, rgba, mask, bone, scale=None):
+    a=rgba.copy(); a[...,3]=(a[...,3].astype(np.float32)*np.clip(mask.astype(np.float32),0,1)).astype(np.uint8)
+    a=defringe(a)
     ys,xs=np.where(a[...,3]>0)
     if not len(ys): return None
-    x0,y0,x1,y1=xs.min(),ys.min(),xs.max()+1,ys.max()+1
-    Image.fromarray(a[y0:y1,x0:x1]).save(f'{OUT}/parts/{name}.png',optimize=True)
-    return {'name':name,'bone':bone,'x':int(x0),'y':int(y0),'w':int(x1-x0),'h':int(y1-y0)}
+    x0,y0,x1,y1=xs.min(),ys.min(),xs.max()+1,ys.max()+1; c=a[y0:y1,x0:x1]
+    if scale:   # 크기 맞춤: 관절(scale[1])을 고정점으로 줄이기
+        s,(px,py)=scale; im=Image.fromarray(c); nw,nh=max(1,round(im.width*s)),max(1,round(im.height*s))
+        im=im.resize((nw,nh),Image.LANCZOS); x0=round(px-(px-x0)*s); y0=round(py-(py-y0)*s); c=np.array(im)
+    Image.fromarray(c).save(f'{OUT}/parts/{name}.png',optimize=True)
+    return {'name':name,'bone':bone,'x':int(x0),'y':int(y0),'w':int(c.shape[1]),'h':int(c.shape[0])}
 
-canon=L('canon'); CA=rmbg(f'{RAW}/canon.jpg'); H,W=CA.shape[:2]
-alpha=CA[...,3]>8
 yy,xx=np.mgrid[0:H,0:W]; P=np.dstack([xx,yy]).astype(float)
-limb=[b for b in BONES if b[0]!='root']
+base,BA=load(args.base); alpha=BA[...,3]>128
+Image.fromarray(BA).save(f'{OUT}/base_aligned.png')   # 검사용(실루엣 기준)
+limb=[b for b in BONES if b[0] not in ('root','arm_up_r')]; names=[b[0] for b in limb]
 D=np.stack([segdist(P,b[2],b[3]) for b in limb]); own=np.argmin(D,0)
-names=[b[0] for b in limb]
-# 몸통 줄: 머리/목/가슴/골반은 세로 띠로(가운데 축) — 거리 비교 대신 y 로
-def bandmask(n):
-    y0={'head':0,'neck':300,'chest':352,'pelvis':590}[n]; y1={'head':300,'neck':352,'chest':590,'pelvis':712}[n]
-    return (yy>=y0)&(yy<y1)
-core=np.isin(own,[names.index(n) for n in ('head','neck','chest','pelvis')])
+TORSO=('head','neck','chest','pelvis')
+def band(n):
+    y0={'head':0,'neck':300,'chest':352,'pelvis':590}[n]; y1={'head':300,'neck':352,'chest':590,'pelvis':712}[n]; return (yy>=y0)&(yy<y1)
+core=np.isin(own,[names.index(n) for n in TORSO])
+# 맨몸 그림의 흰 민소매·반바지(옷 밑에 숨어야 할 곳)
+white=(base.min(-1)>240)&(np.ptp(base,axis=-1)<8)&alpha
+tank=white&(yy>300)&(yy<600)&(xx>255)&(xx<465); shorts=white&(yy>=540)&(yy<780)&(xx>230)&(xx<490)
+edt=ndimage.distance_transform_edt(alpha)
 atts=[]
 for i,n in enumerate(names):
     reg=(own==i)&alpha
-    if n in ('head','neck','chest','pelvis'): reg=core&bandmask(n)&alpha
-    CAP={'upperarm':42,'forearm':30,'hand':60,'thigh':70,'shin':52,'foot':60}
-    k0=n.split('_')[0]
-    if k0 in CAP: reg=reg&(D[i]<CAP[k0])
-    # 관절 겹침: 자기 영역에서 OVERLAP px 안쪽까지 (거리 기반 → 끝이 둥글다)
-    dist=ndimage.distance_transform_edt(~reg)
-    m=np.clip(OVERLAP+0.5-dist,0,1)*alpha
-    if k0 in CAP: m=m*(D[i]<CAP[k0]+OVERLAP)
-    if n=='pelvis': m=np.maximum(m,((own>=names.index('thigh_l'))&(yy<712+OVERLAP)&alpha).astype(float)*(yy>=590))  # 반바지 전체
-    atts.append(save_part(n,CA,m,n))
-# 눈 감기: 감은 눈 이미지에서 눈 둘레만(차이 영역) 오려 머리뼈에
-ec,_=align(L('eyes_closed'),canon)
-diff=np.abs(ec-canon).max(-1); eyezone=(yy>150)&(yy<230)&(xx>250)&(xx<470)
-em=ndimage.binary_dilation((diff>28)&eyezone,iterations=6); em=ndimage.binary_closing(em,iterations=4)
+    if n in TORSO: reg=core&band(n)&alpha
+    if n=='chest': reg|=ndimage.binary_dilation(tank,iterations=2)&alpha&np.isin(own,[names.index(x) for x in names if x.startswith(('upperarm','forearm','hand'))])  # 팔에서 뺀 민소매는 가슴이 갖는다
+    if n.startswith(('upperarm','forearm','hand')): reg=reg&~ndimage.binary_dilation(tank,iterations=2)   # 팔 조각엔 민소매 없음
+    m=(ndimage.distance_transform_edt(~reg)<=OVERLAP)&alpha
+    # 둥근 관절 덮개: 자기 시작 관절에 (팔·다리 반폭+2px) 원 → 돌아가도 꺾인 모서리가 안 보임
+    if not n in TORSO:
+        jx,jy=J[n]; r=edt[jy,jx]+2 if alpha[jy,jx] else 20
+        disk=((xx-jx)**2+(yy-jy)**2<=r*r)&alpha
+        m|=disk
+    if n.startswith(('upperarm','forearm','hand')): m=keep_big(ndimage.binary_opening(m,iterations=2),2000)
+    if n=='pelvis': m|=(np.isin(own,[names.index('thigh_l'),names.index('thigh_r')])&(yy<712+OVERLAP)&(yy>=590)&alpha)
+    sc=(HAND_SCALE,J[n]) if n.startswith('hand') else None
+    mf=m.astype(float)
+    if n not in ('head','pelvis','chest'):
+        # 안쪽 자른 선(다른 조각과 닿는 곳)은 4px 부드럽게 → 이음새·가로줄·호(弧) 선이 안 보임. 밑 조각이 같은 그림이라 티가 안 난다
+        dint=ndimage.distance_transform_edt(~(alpha&~m))
+        mf=mf*np.clip((dint-0.5)/4,0,1)
+    atts.append(save_part(n,BA,mf,n,scale=sc))
+# 눈 감기
+ec,EA=load(args.eyes)
+diff=np.abs(ec-base).max(-1); ez=(yy>140)&(yy<240)&(xx>240)&(xx<480)
+em=ndimage.binary_closing(ndimage.binary_dilation((diff>30)&ez,iterations=6),iterations=4)
 em=ndimage.gaussian_filter(em.astype(float),1.2)*alpha
-E=np.dstack([ec,np.full((H,W),255,np.float32)]).astype(np.uint8)
-eyes=save_part('eyes_closed',E,em,'head')
-# 머리카락: 머리카락 이미지에서 캔버스와 다른 분홍 영역
-hr,_=align(L('hair'),canon); HA=rmbg(f'{RAW}/hair.jpg'); HA[...,:3]=hr.astype(np.uint8) if False else HA[...,:3]
-ha=HA[...,3]>8
-hd=np.abs(hr-canon).max(-1)
-pink=(hr[...,0]-hr[...,1]>38)&(hr[...,2]-hr[...,1]>-5)
-hm=ha&((~alpha)|(hd>40))&(pink|((hr.sum(-1)<420)&ndimage.binary_dilation(pink,iterations=3)))
-hm=ndimage.binary_opening(hm,iterations=1); hm=ndimage.binary_closing(hm,iterations=2)
-lab,n=ndimage.label(hm); sz=ndimage.sum(hm,lab,range(1,n+1)); hm=np.isin(lab,[i+1 for i,s in enumerate(sz) if s>300])
-HR=np.dstack([hr,HA[...,3].astype(np.float32)]).astype(np.uint8)
-front=hm&alpha&(yy<300); back=hm&~front&(~alpha|ndimage.binary_dilation(pink&ha,iterations=1))  # 몸 위에는 분홍 머리카락만(팔 바깥선 유령 방지)
-armz=ndimage.binary_dilation(np.isin(own,[names.index(x) for x in ('upperarm_l','forearm_l','hand_l','upperarm_r','forearm_r','hand_r')])&alpha,iterations=5)
-back=back&~(armz&~pink)  # 팔 바깥선은 머리카락이 아님
-lb_,nb_=ndimage.label(back); sb_=ndimage.sum(back,lb_,range(1,nb_+1)); back=np.isin(lb_,[i+1 for i,v in enumerate(sb_) if v>150])
-hf=save_part('hair_front',HR,ndimage.gaussian_filter(front.astype(float),0.6)*front.astype(float)+0*front,'head')
-hb=save_part('hair_back',HR,back.astype(float),'head')
+eyes=save_part('eyes_closed',np.dstack([ec,np.full((H,W),255,np.float32)]).astype(np.uint8),em,'head')
+# 머리카락: 분홍 + 붙은 바깥선만, 작은 부스러기·흰 점 제거
+hr,HA=load(args.hair); ha=HA[...,3]>128
+bgc=np.median(np.r_[hr[:8].reshape(-1,3),hr[:,:8].reshape(-1,3)],0)
+gap=keep_big((np.abs(hr-bgc).max(-1)<=16)&ha,30); ha&=~gap   # 머리카락 사이에 갇힌 배경색만 뺀다(바깥 가장자리는 부드럽게 둔다)
+pink=(hr[...,0]-hr[...,1]>30)&(hr[...,0]>170)&(hr[...,2]-hr[...,1]>-2)&ha&(yy<720)   # 분홍 머리(피부 그림자는 B<G 라 빠짐)
+dark=(hr.sum(-1)<420)&ha
+hm=pink|(ha&ndimage.binary_dilation(pink,iterations=4)&~ndimage.binary_dilation(alpha&~pink,iterations=0)&~(alpha&(np.abs(hr-base).max(-1)<30)))
+hm|=(HA[...,3]>40)&(hr.sum(-1)<500)&~gap&ndimage.binary_dilation(pink,iterations=5)   # 바깥 진한 선과 그 경계 픽셀까지 포함(끊긴 점선 방지)
+hm=ndimage.binary_closing(hm,iterations=2); hm=ndimage.binary_fill_holes(hm)&(HA[...,3]>40)&~gap
+hm=hm&~((hr.min(-1)>225)&(np.ptp(hr,axis=-1)<22))      # 흰 점
+hm=keep_big(hm,900)   # (opening 은 가는 바깥선을 지워서 안 씀)
+# 안쪽 자른 선(머리카락이 피부·옷과 닿던 곳)의 밝은 테두리 2px 는 버린다 → 흰 줄 없음
+ring=hm&~ndimage.binary_erosion(hm,iterations=2)
+hm&=~(ring&~pink&~dark&alpha)
+front=hm&alpha&(yy<300); back=hm&~front
+armz=ndimage.binary_dilation(np.isin(own,[names.index(x) for x in names if x.startswith(('upperarm','forearm','hand'))])&alpha,iterations=3)
+back=keep_big(back&~armz,600)    # 팔 위에 걸친 머리카락은 뒤로 못 감 → 뺀다(팔이 움직이면 떨어져 보임)
+# 뒷머리는 몸 뒤로 8px 더 들어가게(가장자리 색 번짐): 옷이 몸보다 넓어도 머리카락과 옷 사이에 배경이 안 비친다
+ext=ndimage.binary_dilation(back,iterations=8)&~back&ndimage.binary_dilation(alpha,iterations=6)&(yy<720)
+_,(iy,ix)=ndimage.distance_transform_edt(~back,return_indices=True)
+HB=HA.copy(); HB[ext,:3]=HA[iy[ext],ix[ext],:3]; HB[ext,3]=255
+hb=save_part('hair_back',HB,back|ext,'head'); hf=save_part('hair_front',HA,front,'head')
+def cut_wave_arm(prefix, fname, normal_rgb):
+    """흔드는 팔(오른쪽)만: 윗팔+소매 한 장(가슴뼈), 아래팔+손 한 장(팔꿈치 축, 둥근 덮개)."""
+    wr,WA=load(fname); wa=WA[...,3]>128
+    diff=np.abs(wr-normal_rgb).max(-1)>30
+    zone=(xx>446)&(yy<570)&(yy>200)
+    arm=keep_big(ndimage.binary_closing(wa&zone&ndimage.binary_dilation(diff,iterations=6),iterations=2),3000)
+    # 소매: 보통 자세에서 윗팔뼈 쪽 노란 옷(어깨 솔기 근처까지)
+    yel=(wr[...,0]>200)&(wr[...,1]>180)&(wr[...,2]<175)&wa
+    sleeve=yel&(own==names.index('upperarm_r'))&(yy<490)
+    arm=keep_big(arm|sleeve|(wa&(wr.sum(-1)<430)&ndimage.binary_dilation(sleeve,iterations=3)&(own==names.index('upperarm_r'))),3000)
+    arm=ndimage.binary_fill_holes(arm)
+    # 몸통과 닿는 자르는 선은 6px 부드럽게(두 그림의 아주 작은 차이가 선으로 안 보이게)
+    inner=wa&~arm; d=ndimage.distance_transform_edt(~inner)
+    soft=np.clip((d-1)/6,0,1)*arm
+    # 팔 전체(소매+윗팔+아래팔+손)를 한 장으로: 그림 그대로라 이음새가 없다. 어깨 안쪽 축으로 살짝 흔든다.
+    return save_part(f'{prefix}arm_up_r',WA,soft,'arm_up_r')
+wave_body=cut_wave_arm('',args.base_wave,base)
+# 옷
 cloth=[]
 def cut_outfit(oname, fname):
-    # 옷: 옷 이미지에서 캔버스와 다른 영역 → 가까운 뼈 → 종류(윗옷/치마/양말/신발)
-    ot,_=align(L(fname),canon); OA=rmbg(fname if os.path.isabs(fname) else f'{RAW}/{fname}'); oa=OA[...,3]>8
-    od=np.abs(ot-canon).max(-1)
-    cm=oa&((~alpha)|(od>34)|((od>22)&(yy>1040))); cm=ndimage.binary_opening(cm,iterations=1); cm=ndimage.binary_closing(cm,iterations=2)
-    lab,n=ndimage.label(cm); sz=ndimage.sum(cm,lab,range(1,n+1)); cm=np.isin(lab,[i+1 for i,s in enumerate(sz) if s>200])
-    red=(ot[...,0]-ot[...,1]>70)
-    skin=(np.abs(ot-np.array([255,234,221])).max(-1)<26)|(ot.sum(-1)<330)&~red
-    cm=cm&~(skin&(yy<1040)); cm=ndimage.binary_opening(cm,iterations=2)
-    Dall=np.stack([segdist(P,b[2],b[3]) for b in limb]); ownc=np.argmin(Dall,0)
-    OT=np.dstack([ot,OA[...,3].astype(np.float32)]).astype(np.uint8)
-    kind={'chest':'top','upperarm_l':'top','upperarm_r':'top','pelvis':'bottom','thigh_l':'bottom','thigh_r':'bottom','shin_l':'socks','shin_r':'socks','foot_l':'shoes','foot_r':'shoes'}
-    skirt=cm&(yy>=560)&(yy<820)&((ot[...,2]-ot[...,0])>20)        # 파란 치마는 골반뼈에 한 장
-    for i,n in enumerate(names):
-        k=kind.get(n)
-        if not k: continue
-        reg=cm&(ownc==i)&~skirt
-        if k=='shoes': reg=reg&red
-        if k=='socks': reg=cm&np.isin(ownc,[names.index(n),names.index(n.replace('shin','foot'))])&~red&(yy>850)
-        if k=='bottom':
-            if n!='pelvis': continue
-            reg=skirt
-        if k=='top' and n!='chest': reg=reg&(yy<520)
-        if k=='top':
-            if n!='chest': continue
-            # 캐논의 흰 민소매가 옷 밖으로 비치지 않게: 민소매 자리(+3px)는 옷 그림(피부/옷)으로 덮는다
-            tank=ndimage.binary_dilation((canon.min(-1)>228)&(np.ptp(canon,axis=-1)<18)&alpha&(yy>300)&(yy<600),iterations=3)&oa
-            tops=(cm|tank)&np.isin(ownc,[names.index(x) for x in ('chest','upperarm_l','upperarm_r','neck')])&(yy<580)&(yy>330)&~skirt
-            tops=ndimage.binary_opening(tops,iterations=2); lb,nn=ndimage.label(tops); ss=ndimage.sum(tops,lb,range(1,nn+1)); tops=np.isin(lb,[j+1 for j,v in enumerate(ss) if v>1500])
-            reg=ndimage.binary_fill_holes(ndimage.binary_closing(tops,iterations=8)); reg=ndimage.binary_dilation(reg,iterations=3)|tank
-        if reg.sum()<50: continue
-        m=ndimage.binary_dilation(reg,iterations=2)&oa
-        if k=='bottom':
-            # 치마: 파란 천 + 바로 붙은 바깥선(어두운 색)만. 단 밑 피부·그림자 띠는 뺀다(흰 테두리 원인)
-            blue=skirt; near=ndimage.binary_dilation(blue,iterations=4)&oa
-            dark=ot.sum(-1)<420
-            m=(blue|(near&dark))&oa
-            shorts=ndimage.binary_dilation((canon.min(-1)>228)&(np.ptp(canon,axis=-1)<18)&alpha&(yy>520)&(yy<760),iterations=3)&oa
-            m=ndimage.binary_fill_holes(m|shorts)  # 캐논 흰 반바지 자리는 옷 그림으로 덮는다
-            m=m&~(np.isin(ownc,[names.index(x) for x in ('forearm_l','hand_l','forearm_r','hand_r')])&((xx<262)|(xx>456)))  # 몸통 밖 손·아래팔 바깥선 유령 방지
-            lb,nn=ndimage.label(m); m=lb==(1+int(np.argmax(ndimage.sum(m,lb,range(1,nn+1)))))
-        if k=='top':
-            m=m&~(np.isin(ownc,[names.index(x) for x in ('forearm_l','hand_l','forearm_r','hand_r')])&(yy>430))  # 아래팔 바깥선 유령 방지
-            # 소매 = 윗팔뼈에 가까운 + 겨드랑이(y<440) 위 / 나머지는 몸통. 몸통은 소매 쪽으로 OVERLAP 겹침
-            arm={'l':names.index('upperarm_l'),'r':names.index('upperarm_r')}
-            torso=m.copy()
-            for side,ix in arm.items():
-                sm=(m|tank)&(ownc==ix)&((yy<440)|tank)&((xx<300) if side=='l' else (xx>420))
-                lb,nn=ndimage.label(sm)
-                if nn>1: sm=lb==(1+int(np.argmax(ndimage.sum(sm,lb,range(1,nn+1)))))  # 부스러기 없이 소매 한 덩어리
-                a=save_part(f'{oname}_sleeve_upperarm_{side}',OT,(ndimage.binary_dilation(sm,iterations=3)&(m|tank)).astype(float),f'upperarm_{side}',fringe=True); a['kind']='sleeve'; a['slot']=f'sleeve_{side}'; a['outfit']=oname; cloth.append(a)
-                # 몸통 쪽 어깨 덮개(shoulder cap)는 남겨 둔다: 팔을 들어도 겨드랑이가 비지 않음
-            m=torso
-        a=save_part(f'{oname}_{k}_{n}',OT,m.astype(float),n,fringe=True); a['kind']=k; a['outfit']=oname
-        a['slot']={'top':'top','bottom':'bottom'}.get(k) or f"{k}_{n[-1]}"; cloth.append(a)
+    fname,_,wfile=fname.partition(',')
+    ot,OA=load(fname); oa=OA[...,3]>128
+    R,G,Bc=ot[...,0],ot[...,1],ot[...,2]
+    od=np.abs(ot-base).max(-1)
+    dark=(ot.sum(-1)<430)&oa
+    def with_line(m,px=4): return (m|(dark&ndimage.binary_dilation(m,iterations=px)))&oa
+    yellow=(R>200)&(G>180)&(Bc<175)&(R-Bc>50)&oa&(yy<640)
+    blue=(Bc-R>20)&(Bc>150)&oa&(yy>520)&(yy<860)
+    red=(R-G>70)&(R>140)&oa&(yy>1080)
+    sockw=(ot.min(-1)>215)&(np.ptp(ot,axis=-1)<28)&oa&(yy>1020)&(od>12)
+    yellow_out=np.zeros_like(yellow)
+    wcov=ndimage.binary_dilation(white&(yy>288)&(yy<600)&(xx>240)&(xx<525),iterations=3)&oa   # 맨몸의 흰 곳이 옷 가장자리로 비치지 않게
+    top=ndimage.binary_fill_holes(with_line(keep_big(ndimage.binary_closing(yellow,iterations=3),3000)))
+    top|=ndimage.binary_dilation(tank,iterations=3)&oa&ndimage.binary_dilation(top,iterations=6)&~yellow_out  # 민소매 자리는 옷 그림으로 덮기
+    top|=wcov&ndimage.binary_dilation(top,iterations=8)
+    skirt=ndimage.binary_fill_holes(with_line(keep_big(ndimage.binary_closing(blue,iterations=3),3000)))
+    skirt|=ndimage.binary_dilation(shorts,iterations=3)&oa&(yy<820)
+    skirt=skirt&~np.isin(own,[names.index(x) for x in names if x.startswith(('forearm','hand'))])
+    skirt=keep_big(skirt,3000)
+    for side in 'lr':
+        legs=np.isin(own,[names.index(f'shin_{side}'),names.index(f'foot_{side}')])
+        so=keep_big(ndimage.binary_closing(sockw&legs,iterations=2),300)
+        so=ndimage.binary_fill_holes(with_line(so,3))&legs
+        sh=ndimage.binary_fill_holes(with_line(keep_big(red&legs,300),3))&legs
+        for k,mm,bone in (('socks',so,f'shin_{side}'),('shoes',sh,f'foot_{side}')):
+            a=save_part(f'{oname}_{k}_{bone}',OA,mm,bone); a.update(kind=k,outfit=oname,slot=f'{k}_{side}'); cloth.append(a)
+    # 소매: 윗팔뼈 쪽 노란 옷 + 어깨 회전축 둘레 원(돌려도 어깨 위를 늘 덮음). 몸통 윗옷은 그대로 둔다(어깨 덮개).
+    for side in 'lr':
+        ix=names.index(f'upperarm_{side}'); jx,jy=J[f'upperarm_{side}']
+        sl=top&(own==ix)
+        sl|=top&(((xx-jx)**2+(yy-jy)**2)<=46**2)
+        sl=keep_big(sl,500)
+        a=save_part(f'{oname}_sleeve_upperarm_{side}',OA,sl,f'upperarm_{side}'); a.update(kind='sleeve',outfit=oname,slot=f'sleeve_{side}'); cloth.append(a)
+    for k,mm,bone,slot in (('top',top,'chest','top'),('bottom',skirt,'pelvis','bottom')):
+        a=save_part(f'{oname}_{k}_{bone}',OA,mm,bone); a.update(kind=k,outfit=oname,slot=slot); cloth.append(a)
+    if wfile:
+        a1=cut_wave_arm(f'{oname}_',wfile,ot); a1.update(kind='wave',outfit=oname,slot='arm_up_r'); cloth.append(a1)
 for on,fn in OUTFITS.items(): cut_outfit(on,fn)
-# 장식: 두 덩어리(리본, 별 핀)
-AC=rmbg(f'{RAW}/accs.jpg'); lab,n=ndimage.label(AC[...,3]>128); sz=ndimage.sum(AC[...,3]>128,lab,range(1,n+1))
+# 장식(리본, 별 핀)
+AC=rmbg(P_(args.accs)); lab,n=ndimage.label(AC[...,3]>128); sz=ndimage.sum(AC[...,3]>128,lab,range(1,n+1))
 big=sorted([i+1 for i,s in enumerate(sz) if s>2000],key=lambda i:np.where(lab==i)[1].mean())
-accs=[]
-for nm,i in zip(['acc_ribbon','acc_star'],big):
-    m=ndimage.binary_dilation(lab==i,iterations=3)
-    a=save_part(nm,AC,m.astype(float),None); accs.append(a)
-json.dump({'size':[W,H],'bones':BONES,'atts':atts,'eyes':eyes,'hair':[hb,hf],'cloth':cloth,'accs':accs},open(f'{OUT}/build.json','w'),indent=1)
-# 검사용 겹침 미리보기
-col=np.zeros((H,W,3),np.uint8); rng=np.random.default_rng(3); pal=rng.integers(60,255,(len(names),3))
-col[alpha]=pal[own[alpha]]; Image.fromarray(col).save(f'{OUT}/_seg.png')
-print('ok parts',len(atts),'cloth',[c['name'] for c in cloth],'accs',len(accs),'hair',[x and x['w'] for x in (hb,hf)])
+accs=[save_part(nm,AC,ndimage.binary_dilation(lab==i,iterations=3),None) for nm,i in zip(['acc_ribbon','acc_star'],big)]
+hair_top=int(np.where(hm[:, 400:470].any(1))[0].min())
+json.dump({'size':[W,H],'bones':BONES,'atts':atts,'eyes':eyes,'hair':[hb,hf],'cloth':cloth,'accs':accs,'hair_top_y':hair_top,'hand_scale':HAND_SCALE,'wave_body':wave_body},open(f'{OUT}/build.json','w'),indent=1)
+shutil.rmtree(TMP,ignore_errors=True)
+print('ok',len(atts),'cloth',len(cloth),'hair_top',hair_top)

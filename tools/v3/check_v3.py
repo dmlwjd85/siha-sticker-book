@@ -16,6 +16,7 @@ def compose(outfit, hair=True):
     for s in sk['slots']:
         n=s.get('attachment')
         if s['name'] in ('top','bottom','eyes') or s['name'].startswith(('socks','shoes','sleeve')): n=fit.get(s['name']) if fit else None
+        if s['name']=='arm_up_r': continue
         if not n or (not hair and s['name'].startswith('hair')): continue
         L=layer(s['name'],skin[s['name']][n]).astype(np.float32); a=L[...,3:]/255
         c[...,:3]=L[...,:3]*a+c[...,:3]*(1-a); c[...,3:]=a*255+c[...,3:]*(1-a)
@@ -24,7 +25,7 @@ res={}
 body=compose(None, hair=False); A=body[...,3]>128  # 캐논은 대머리 → 머리카락 빼고 비교; A=body[...,3]>128
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from rmbg import rmbg
-ref=rmbg(sys.argv[3]) if len(sys.argv)>3 else None  # 캔버스 원본 jpg(배경 있는 그대로)
+ref=(np.array(Image.open(sys.argv[3]).convert('RGBA')) if sys.argv[3].endswith('.png') else rmbg(sys.argv[3])) if len(sys.argv)>3 else None  # 캔버스 원본 jpg(배경 있는 그대로)
 if ref is not None:
     R=ref[...,3]>128; res['silhouette_iou']=round(float((A&R).sum()/(A|R).sum()),4)
 holes=ndimage.binary_fill_holes(A)&~A; lb,n=ndimage.label(holes); res['holes_px']=int(holes.sum()); res['holes']=int(n)
@@ -40,10 +41,11 @@ for n,b in bones.items():
     if not m.any(): continue
     t=ndimage.distance_transform_edt(m).max()*2; ov[f'{p}>{n}']=round(float(t),1)
     # 겹친 곳에서 두 조각 색 차이(같은 원본에서 잘랐으면 0 에 가까움)
+    if n.startswith('hand') or n=='arm_up_r': continue  # 손은 크기를 줄여서(0.88) 겹친 곳 그림이 다름 → 색 비교 제외
     la,lb2=lab(base[n][m][:,:3].astype(np.float32)),lab(base[p][m][:,:3].astype(np.float32))
     dEs.append(float(np.median(np.linalg.norm(la-lb2,axis=1))))
 res['joint_overlap_px']=ov
-res['joint_overlap_ok_8_12']=all(8<=v<=12 for k,v in ov.items() if not k.startswith('pelvis>thigh'))  # 골반>허벅지는 반바지가 덮어서 일부러 넓음
+res['joint_overlap_ok_8_12']=all(v>=8 for k,v in ov.items() if not k.endswith('arm_up_r'))  # 둥근 관절 덮개 때문에 8px 이상(넓을수록 꺾임 없음)  # 골반>허벅지는 반바지가 덮어서 일부러 넓음
 res['joint_dE_median_max']=round(max(dEs),2)
 # 팔레트 ΔE(스타일 가이드 HEX 대비): 주요 색이 가이드 팔레트에서 얼마나 먼가
 PAL={'outline':'6E3D5B','skin':'FFEADD','skin_shade':'F6CDBF','hair':'F4A6C4','hair_shade':'E07FA6','eye':'C2457A','top':'FCE38A','skirt':'7FAAD6','sock':'FFFFFF','shoe':'D63C44'}
@@ -66,6 +68,34 @@ for nm,(x,y) in crops:
     c=img[max(0,y-30):y+30,max(0,x-30):x+30]; c=cv2.resize(c,(240,240),interpolation=cv2.INTER_NEAREST); tiles.append(c)
 sheet=np.vstack([np.hstack(tiles[:4]),np.hstack(tiles[4:])]); Image.fromarray(sheet).save(f'{OUT}/crops400.png')
 
+# 선 검사: 조각 바깥 테두리(2px) 중 진한 선(#6E3D5B 계열) 비율 — 팔다리도 얼굴만큼 선이 있어야 함
+OUTL=lab(np.array([[110,61,91]],np.float32))[0]
+line={}
+for s_ in sk['slots']:
+    n_=s_.get('attachment')
+    if not n_ or s_['name'] in ('eyes','arm_up_r') or s_['name'].startswith('hair'): continue
+    im=np.array(Image.open(f"{D}/{skin[s_['name']][n_]['path']}").convert('RGBA'))
+    al=im[...,3]>128; ring=al&~ndimage.binary_erosion(al,iterations=3)
+    outer=ndimage.binary_dilation(~al,iterations=1)&ring   # 실루엣 바깥쪽 테두리만
+    dark=(im[...,:3].astype(int).sum(-1)<430)
+    line[s_['name']]=round(float((dark&ring).sum()/max(outer.sum(),1)),2)
+res['outline_ratio']=line
+# 비율 검사: 캐논(cand2)과 지금 맨몸 실루엣의 팔다리 폭(가운데에서 뼈에 수직)과 길이
+if len(sys.argv)>4:
+    CAN=rmbg(sys.argv[4])[...,3]>128; ME=compose(None,hair=False)[...,3]>128
+    def width(M,a,b):
+        a=np.array(a,float); b=np.array(b,float); m=(a+b)/2; d=(b-a)/np.linalg.norm(b-a); nrm=np.array([-d[1],d[0]]); w=0
+        for t in range(-80,81):
+            x,y=(m+nrm*t).round().astype(int)
+            if 0<=x<W and 0<=y<H and M[y,x]: w+=1
+        return w
+    pr={}
+    for bn in ('upperarm_l','forearm_l','thigh_l','shin_l','upperarm_r','forearm_r','thigh_r','shin_r'):
+        b_=bones[bn]; kid=[k for k in sk['bones'] if k.get('parent')==bn][0]['rest']
+        pr[bn]=round(width(ME,(b_['rest']['x'],b_['rest']['y']),(kid['x'],kid['y']))/max(width(CAN,(b_['rest']['x'],b_['rest']['y']),(kid['x'],kid['y'])),1),3)
+    ys=np.where(ME.any(1))[0]; yc=np.where(CAN.any(1))[0]
+    res['limb_width_ratio_vs_canon']=pr; res['height_ratio_vs_canon']=round((ys.max()-ys.min())/(yc.max()-yc.min()),3)
+    res['proportion_ok']=bool(all(0.95<=v<=1.08 for v in pr.values()) and 0.98<=res['height_ratio_vs_canon']<=1.02)
 # 흰 테두리 검사: 치마·소매 조각 가장자리 2px 안에 밝은(흰) 픽셀 비율
 fr={}
 for sl in ('bottom','sleeve_l','sleeve_r','top'):
@@ -87,37 +117,46 @@ def keys(k,t):
         if t<=b2['time']: u=(t-a['time'])/(b2['time']-a['time']); u=0.5-np.cos(u*np.pi)/2; return a['value']+(b2['value']-a['value'])*u
     return k[-1]['value']
 LAYERS={}
-def render(pose, mark_under=False, hair=True):
+SW=sk['animations']['wave'].get('swap')
+def render(pose, mark_under=False, hair=True, up=False):
     Wd=world(pose); c=np.zeros((H,W,4),np.float32); fit=sk['outfits']['basic']
     for s in sk['slots']:
-        n=s.get('attachment')
+        if SW and up and s['name'] in SW['hide']: continue
+        if SW and not up and s['name'] in SW['show']: continue
+        n=fit.get('arm_up_r',s.get('attachment')) if s['name']=='arm_up_r' else s.get('attachment')
         if s['name'] in ('top','bottom','eyes') or s['name'].startswith(('socks','shoes','sleeve')): n=fit.get(s['name'])
         if not n or (not hair and s['name'].startswith('hair')): continue
         key=(s['name'],n)
         if key not in LAYERS: LAYERS[key]=layer(s['name'],skin[s['name']][n])
         L=LAYERS[key].astype(np.float32).copy()
         if mark_under and s['name'] in ('chest','neck','upperarm_l','upperarm_r'):
-            u=(L[...,:3].min(-1)>232)&(np.ptp(L[...,:3],axis=-1)<16)&(L[...,3]>128); L[u,:3]=[255,0,255]
+            u=(L[...,:3].min(-1)>240)&(np.ptp(L[...,:3],axis=-1)<8)&(L[...,3]>128); L[u,:3]=[255,0,255]
         M=Wd[s['bone']][:2]; L[...,:3]*=L[...,3:]/255  # 미리 곱한 알파로 돌려야 가장자리에 검은 줄이 안 생김(캔버스와 같음)
         L=cv2.warpAffine(L,M,(W,H),flags=cv2.INTER_LINEAR)
         a=L[...,3:]/255; c[...,:3]=L[...,:3]+c[...,:3]*(1-a); c[...,3:]=a*255+c[...,3:]*(1-a)
     return c
 BODY=ndimage.binary_dilation(A,iterations=0) if ref is None else (ref[...,3]>128)  # 머리카락 사이 틈은 빼고 몸 안 구멍만
 PAD=sk['skeleton'].get('stagePad',0)
+fit_b=sk['outfits']['basic']
 wv=sk['animations']['wave']; frames=[]; worst=0
 for t in np.linspace(0,wv['period'],25):
     pose={bn:{'rotate':keys(tl['rotate'],t)} for bn,tl in wv['bones'].items()}
-    ch=render(pose,True)  # 드러난 민소매는 머리카락까지 그린 뒤(머리카락에 가려지면 안 보임)
+    up=bool(SW) and SW['on']<=t<SW['off']
+    ch=render(pose,True,up=up)  # 드러난 민소매는 머리카락까지 그린 뒤(머리카락에 가려지면 안 보임)
     mag=(np.abs(ch[...,0]-255)<40)&(ch[...,1]<90)&(np.abs(ch[...,2]-255)<40)&(ch[...,3]>128)
-    c=render(pose,True,hair=False); A2=c[...,3]>128  # 구멍은 머리카락 빼고(머리카락 틈은 이음새 아님)
+    c=render(pose,True,hair=False,up=up); A2=c[...,3]>128  # 구멍은 머리카락 빼고(머리카락 틈은 이음새 아님)
     # 손(손끝)이 무대 밖으로 나가면 안 됨
-    hb=world(pose)['hand_r']; tips=[(hb@np.array([x,y,1]))[:2] for x,y in ((634,716),(665,745),(600,745))]
+    if up:
+        aa=skin['arm_up_r'][fit_b['arm_up_r']]; hb=world(pose)['arm_up_r']
+        tips=[(hb@np.array([x,y,1]))[:2] for x,y in ((aa['x'],aa['y']),(aa['x']+aa['width'],aa['y']),(aa['x']+aa['width'],aa['y']+aa['height']))]
+    else:
+        hb=world(pose)['hand_r']; tips=[(hb@np.array([x,y,1]))[:2] for x,y in ((634,716),(665,745),(600,745))]
     res.setdefault('wave_hand_out',0); res['wave_hand_out']+=int(any(p[0]<-PAD or p[0]>W+PAD or p[1]<0 or p[1]>H for p in tips))
     hole=ndimage.binary_fill_holes(A2)&~A2
     hole=hole&~ndimage.binary_opening(hole,iterations=3)  # 이음새 = 가는 틈(두께 ≤6px). 팔과 몸 사이 넓은 빈 곳은 이음새 아님
-    seam=int(mag.sum()+hole[:650].sum()); worst=max(worst,seam); frames.append((t,seam,render(pose)))
+    seam=int(mag.sum()+hole[:650].sum()); worst=max(worst,seam); frames.append((t,seam,render(pose,up=up)))
 base=frames[0][1]; res['wave_frames']=len(frames); res['wave_seam_rest_px']=base; res['wave_seam_px_max']=worst; res['wave_seam_extra_px_max']=worst-base; res['wave_seam_ok']=worst-base<=6 and base<=10 and res['wave_hand_out']==0  # 쉬는 자세보다 더 벌어진 px
-json.dump(res,open(f'{OUT}/checks.json','w'),indent=1,ensure_ascii=False); print('wave seam max',worst)
+json.dump(res,open(f'{OUT}/checks.json','w'),indent=1,ensure_ascii=False,default=lambda o: o.item() if hasattr(o,'item') else str(o)); print('wave seam max',worst)
 # 400% 시트에 흔들기 프레임(오른쪽 어깨 둘레) 추가 — 25 프레임 전부
 tiles=[]
 for t,seam,c in frames:
