@@ -592,16 +592,16 @@
       "x": 124,
       "y": 486,
       "width": 114,
-      "height": 152
+      "height": 153
      }
     },
     "hand_l": {
      "hand_l": {
       "path": "parts/hand_l.png",
-      "x": 97,
-      "y": 609,
+      "x": 98,
+      "y": 608,
       "width": 69,
-      "height": 107
+      "height": 106
      }
     },
     "forearm_r": {
@@ -617,9 +617,9 @@
      "hand_r": {
       "path": "parts/hand_r.png",
       "x": 556,
-      "y": 609,
+      "y": 608,
       "width": 64,
-      "height": 110
+      "height": 109
      }
     },
     "arm_up_r": {

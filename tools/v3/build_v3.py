@@ -83,9 +83,9 @@ def clean_hem(rgba, m, band=14):
     yl=(v[...,0]>200)&(v[...,1]>170)&(v[...,2]<190)&(v[...,0]-v[...,2]>40)
     other=~yl&~dk   # 피부·배경
     hem=dk&ndimage.binary_dilation(yl,iterations=2)&ndimage.binary_dilation(other|~mb,iterations=2)   # 옷 단 바깥 진한 선
-    dk5=v.sum(-1)<540
-    inner=mb&(ndimage.distance_transform_edt(~hem)<=16)&(ndimage.distance_transform_edt(~dk5)>=3)&~ndimage.binary_dilation(other,iterations=1)
-    line=inner&~dk&(np.abs(v-med).sum(-1)>12)
+    dk5=v.sum(-1)<470
+    inner=mb&(ndimage.distance_transform_edt(~hem)<=32)&(ndimage.distance_transform_edt(~dk5)>=3)&~ndimage.binary_dilation(other,iterations=1)
+    line=inner&~dk&(np.abs(v-med).sum(-1)>8)
     line=ndimage.binary_dilation(line,iterations=1)&mb&(ndimage.distance_transform_edt(~dk5)>=2)&~ndimage.binary_dilation(other,iterations=1)
     out=rgba.copy(); out[...,:3]=cv2.inpaint(rgb,line.astype(np.uint8)*255,4,cv2.INPAINT_TELEA); return out,int(line.sum())
 def save_part(name, rgba, mask, bone, scale=None, ds=False):
@@ -128,11 +128,40 @@ if args.hands:
         bl=np.clip((t+2)/8,0,1)[...,None]*src[...,None]
         BA=(BA*(1-bl)+ha2*bl).astype(np.uint8); base=np.where(src[...,None]&(bl>0.5),ha2[...,:3].astype(np.float32),base)
     alpha=BA[...,3]>128
+# 팔·손 바깥선 다시 그리기(정리): 실루엣을 4배로 키워 부드럽게 한 뒤 거리값으로 선 한 줄(AA)을 그림 → 계단·1px 꺾임 없음
+def smooth_outline(base, BA, zone, width=2.6):
+    A=(BA[...,3]>128).astype(np.float32); S=4
+    big=cv2.resize(A,(W*S,H*S),interpolation=cv2.INTER_LINEAR); big=cv2.GaussianBlur(big,(0,0),4.5*S)>0.5
+    din=ndimage.distance_transform_edt(big)/S; dout=ndimage.distance_transform_edt(~big)/S
+    sd=cv2.resize((din-dout).astype(np.float32),(W,H),interpolation=cv2.INTER_AREA)   # 안쪽 +, 바깥 -
+    a_new=np.clip((sd+1.0)/2.0,0,1)
+    # 선 안쪽 색: 가장자리에서 4px 안쪽 색을 끌어옴
+    inner=(sd>width+4.5)&(A>0)
+    _,(iy,ix)=ndimage.distance_transform_edt(~inner,return_indices=True); fill=base[iy,ix]
+    t=np.clip((sd-width)/1.6+0.5,0,1)[...,None]   # 0=선, 1=안쪽
+    col=OUTL*(1-t)+fill*t
+    z=zone&(sd>-2)&(sd<width+4.5)
+    base[z]=col[z]; BA[...,:3][z]=base[z].astype(np.uint8); BA[...,3][zone]=(a_new[zone]*255).astype(np.uint8)
+    return base,BA
+# 손가락 사이 진한 분홍 그림자를 옅게(피부색 쪽으로 60%)
 # 바깥선 정리: 몸 실루엣 바깥 2px 안의 밝은 점(회색 점·흰 홈·끊긴 선)을 선 색으로 채움 → 한 두께·한 색의 선
 OUTL=np.median(base[alpha&(base.sum(-1)<260)],0)
 ring=alpha&~ndimage.binary_erosion(alpha,iterations=2)
 lt=ring&(base.sum(-1)>OUTL.sum()+90)
 base[lt]=OUTL; BA[...,:3][lt]=OUTL.astype(np.uint8); print('outline fix px',int(lt.sum()),OUTL)
+limbz=np.zeros((H,W),bool)
+for hn,fn,un in (('hand_l','forearm_l','upperarm_l'),('hand_r','forearm_r','upperarm_r')):
+    limbz|=(segdist(P,J[un],J[fn])<60)|(segdist(P,J[fn],J[hn])<60)|(segdist(P,J[hn],(103,716) if hn=='hand_l' else (634,716))<75)
+limbz&=(yy>480)
+handz=limbz&((segdist(P,J['hand_l'],(103,716))<70)|(segdist(P,J['hand_r'],(634,716))<70))
+bv=base; pk=handz&(bv[...,0]-bv[...,1]>38)&(bv.sum(-1)>430)&(BA[...,3]>128)
+skinc=np.median(base[handz&(BA[...,3]>200)&(bv.sum(-1)>700)],0)
+base[pk]=base[pk]*0.4+skinc*0.6; BA[...,:3][pk]=base[pk].astype(np.uint8); print('finger pink px',int(pk.sum()))
+base,BA=smooth_outline(base,BA,limbz)
+alpha=BA[...,3]>128
+_h=ndimage.binary_fill_holes(alpha)&~alpha; _h=_h&~keep_big(_h,200)   # 다시 그리며 생긴 작은 틈(겨드랑이)만 메움
+if _h.any():
+    _,(iy,ix)=ndimage.distance_transform_edt(~alpha,return_indices=True); base[_h]=base[iy[_h],ix[_h]]; BA[_h]=BA[iy[_h],ix[_h]]; BA[...,3][_h]=255; alpha=BA[...,3]>128
 Image.fromarray(BA).save(f'{OUT}/base_aligned.png')   # 검사용(실루엣 기준)
 limb=[b for b in BONES if b[0] not in ('root','arm_up_r')]; names=[b[0] for b in limb]
 D=np.stack([segdist(P,b[2],b[3]) for b in limb]); own=np.argmin(D,0)
