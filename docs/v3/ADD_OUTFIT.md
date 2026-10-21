@@ -21,5 +21,5 @@ Spine 으로 옮기기: `skeleton.json` 은 Spine JSON 모양(bones/slots/skins/
 기본값: `basic=outfit_lines.jpg,outfit_wave.jpg`, 바탕 `body_lines_raw.jpg`, 흔들기 바탕 `body_wave.jpg`.
 
 ## 손 그림 / 신발·양말 속 조각
-- `--hands hands_relaxed.jpg`: 손가락 모은 손 그림(GenerateImage). 손목 기준으로 돌려 팔 방향에 맞춘 뒤 손목 아래만 바꿉니다.
+- `--hands hands_sheet.jpg`(기본): 손 두 개만 그린 그림표(GenerateImage, 손가락마다 선 하나). 이름에 sheet 가 들어가면 그림표로 읽습니다. `hands_relaxed.jpg` 같은 전신 그림도 됩니다. 손목 기준으로 돌려 팔 방향에 맞춘 뒤 손목 아래만 바꿉니다.
 - 옷마다 `inshoe_foot_*`(신발 안 발), `insock_shin_*`(양말 안 정강이) 조각이 자동으로 생깁니다. 맨발 발가락이나 다리 선이 신발·양말 밖으로 나오지 않게 합니다.

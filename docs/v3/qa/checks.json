@@ -1,5 +1,5 @@
 {
- "silhouette_iou": 0.9977,
+ "silhouette_iou": 0.9978,
  "holes_px": 0,
  "holes": 0,
  "joint_overlap_px": {
@@ -11,7 +11,7 @@
   "forearm_l>hand_l": 22.4,
   "chest>upperarm_r": 36.2,
   "upperarm_r>forearm_r": 24.2,
-  "forearm_r>hand_r": 22.4,
+  "forearm_r>hand_r": 21.5,
   "pelvis>thigh_l": 85.0,
   "thigh_l>shin_l": 38.1,
   "shin_l>foot_l": 33.0,
@@ -22,7 +22,7 @@
  },
  "joint_overlap_ok_8_12": true,
  "joint_dE_median_max": 0.0,
- "palette_dE_p50": 6.16,
+ "palette_dE_p50": 5.29,
  "palette_dE_p90": 17.09,
  "skirt_hem_y": 785,
  "shorts_hem_y": 717,
@@ -40,10 +40,10 @@
   "head": 3.13,
   "upperarm_l": 1.66,
   "upperarm_r": 1.74,
-  "forearm_l": 2.11,
-  "hand_l": 2.42,
-  "forearm_r": 2.13,
-  "hand_r": 2.33
+  "forearm_l": 2.13,
+  "hand_l": 2.6,
+  "forearm_r": 2.18,
+  "hand_r": 2.59
  },
  "limb_width_ratio_vs_canon": {
   "upperarm_l": 1.049,

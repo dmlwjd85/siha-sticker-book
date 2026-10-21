@@ -365,8 +365,8 @@
       "path": "parts/hair_back.png",
       "x": 161,
       "y": 48,
-      "width": 396,
-      "height": 510
+      "width": 393,
+      "height": 431
      }
     },
     "thigh_l": {
@@ -598,10 +598,10 @@
     "hand_l": {
      "hand_l": {
       "path": "parts/hand_l.png",
-      "x": 98,
+      "x": 85,
       "y": 608,
-      "width": 69,
-      "height": 106
+      "width": 82,
+      "height": 120
      }
     },
     "forearm_r": {
@@ -617,9 +617,9 @@
      "hand_r": {
       "path": "parts/hand_r.png",
       "x": 556,
-      "y": 608,
-      "width": 64,
-      "height": 109
+      "y": 609,
+      "width": 81,
+      "height": 122
      }
     },
     "arm_up_r": {

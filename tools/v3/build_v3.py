@@ -13,7 +13,7 @@ ap=argparse.ArgumentParser()
 ap.add_argument('raw',nargs='?',default=os.path.join(HERE,'raw')); ap.add_argument('out',nargs='?',default=os.path.join(HERE,'out'))
 ap.add_argument('--base',default='body_lines_raw.jpg',help='맨몸(굵은 선) 그림')
 ap.add_argument('--eyes',default='eyes_closed_lines.jpg'); ap.add_argument('--hair',default='hair_lines.jpg'); ap.add_argument('--accs',default='accs.jpg')
-ap.add_argument('--hands',default='hands_relaxed.jpg',help='손만 가져올 그림(손가락 모은 자연스러운 손)')
+ap.add_argument('--hands',default='hands_sheet.jpg',help='손만 가져올 그림(손가락 모은 자연스러운 손)')
 ap.add_argument('--base_wave',default='body_wave.jpg',help='맨몸 손 흔드는 자세(오른쪽 팔만 다름)')
 ap.add_argument('--outfit',action='append',metavar='이름=파일 또는 이름=파일,흔들기파일'); ap.add_argument('--config')
 args=ap.parse_args(); RAW,OUT=args.raw,args.out
@@ -106,9 +106,27 @@ base,BA=load(args.base); alpha=BA[...,3]>128
 # 손 갈아 끼우기: 새로 그린 "손가락 모은 손"을 손목 기준으로 돌려 팔 방향에 맞춘 뒤 손목 아래만 바꾼다
 # (손 그림 좌표: 720x1280 기준 손목·팔뚝 점, 정렬 없이 그대로)
 HAND_SRC={'hand_l':((190,672),(220,530)),'hand_r':((535,672),(500,530))}
+# 손 그림표(hands_sheet.jpg: 손 두 개만, 손목이 위): 각 손을 크기 맞춰 720x1280 캔버스의 손목 자리에 아래로 늘어뜨려 놓는다
+SHEET_WRIST={'hand_l':(297,213),'hand_r':(737,213)}; SHEET_SCALE=(0.23,0.19)   # 가로=손목 너비 맞춤, 세로=캐논 손 길이
 if args.hands:
-    im=Image.open(P_(args.hands)).convert('RGB').resize((W,H),Image.LANCZOS); tp=f'{TMP}/hands.png'; im.save(tp)
-    HRA=rmbg(tp); HRA[...,:3]=np.array(im)
+    if 'sheet' in os.path.basename(args.hands):
+        sim=Image.open(P_(args.hands)).convert('RGB'); sim=Image.fromarray(cv2.erode(np.array(sim),np.ones((7,7),np.uint8))); tp=f'{TMP}/hsheet.png'; sim.save(tp); SA=rmbg(tp); SA[...,:3]=np.array(sim)
+        HRA=np.zeros((H,W,4),np.uint8)
+        for hn,(sx0,sy0) in SHEET_WRIST.items():
+            half=SA[:, :512] if sx0<512 else SA[:, 512:]; ox=0 if sx0<512 else 512
+            ys_,xs_=np.where(half[...,3]>128); y0=sy0+10   # 손목 윗변(밝은 끝)은 버림
+            c=half[y0:ys_.max()+2, xs_.min():xs_.max()+1].copy(); cx=sx0-ox-xs_.min()
+            ci=Image.fromarray(c); nw,nh=max(1,round(ci.width*SHEET_SCALE[0])),max(1,round(ci.height*SHEET_SCALE[1]))
+            ci=np.array(ci.resize((nw,nh),Image.LANCZOS)); (wx,wy),_=HAND_SRC[hn]
+            px=int(round(wx-cx*SHEET_SCALE[0])); py=int(wy-2)
+            HRA[py:py+nh,px:px+nw]=ci
+        sk_=HRA[...,:3][(HRA[...,3]>200)&(HRA[...,:3].astype(int).sum(-1)>650)].astype(float); fz_=(segdist(P,J['forearm_l'],J['hand_l'])<10)|(segdist(P,J['forearm_r'],J['hand_r'])<10); bk_=base[fz_&(BA[...,3]>200)&(base.sum(-1)>600)]
+        if len(sk_) and len(bk_):
+            gain=np.median(bk_,0)/np.median(sk_,0); HRA[...,:3]=np.clip(HRA[...,:3]*gain,0,255).astype(np.uint8); print('hand skin gain',gain.round(3))
+        HAND_SRC={k:((v[0][0],v[0][1]),(v[0][0],v[0][1]-140)) for k,v in HAND_SRC.items()}
+    else:
+        im=Image.open(P_(args.hands)).convert('RGB').resize((W,H),Image.LANCZOS); tp=f'{TMP}/hands.png'; im.save(tp)
+        HRA=rmbg(tp); HRA[...,:3]=np.array(im)
     for hn,fn in (('hand_l','forearm_l'),('hand_r','forearm_r')):
         (wx,wy),(ex,ey)=HAND_SRC[hn]; a_src=np.degrees(np.arctan2(wy-ey,wx-ex))
         w=np.array(J[hn],float); e=np.array(J[fn],float); a_dst=np.degrees(np.arctan2(*(w-e)[::-1]))
@@ -129,9 +147,9 @@ if args.hands:
         BA=(BA*(1-bl)+ha2*bl).astype(np.uint8); base=np.where(src[...,None]&(bl>0.5),ha2[...,:3].astype(np.float32),base)
     alpha=BA[...,3]>128
 # 팔·손 바깥선 다시 그리기(정리): 실루엣을 4배로 키워 부드럽게 한 뒤 거리값으로 선 한 줄(AA)을 그림 → 계단·1px 꺾임 없음
-def smooth_outline(base, BA, zone, width=2.6):
+def smooth_outline(base, BA, zone, width=2.6, sig=4.5, recolor=True):
     A=(BA[...,3]>128).astype(np.float32); S=4
-    big=cv2.resize(A,(W*S,H*S),interpolation=cv2.INTER_LINEAR); big=cv2.GaussianBlur(big,(0,0),4.5*S)>0.5
+    big=cv2.resize(A,(W*S,H*S),interpolation=cv2.INTER_LINEAR); big=cv2.GaussianBlur(big,(0,0),sig*S)>0.5
     din=ndimage.distance_transform_edt(big)/S; dout=ndimage.distance_transform_edt(~big)/S
     sd=cv2.resize((din-dout).astype(np.float32),(W,H),interpolation=cv2.INTER_AREA)   # 안쪽 +, 바깥 -
     a_new=np.clip((sd+1.0)/2.0,0,1)
@@ -140,7 +158,9 @@ def smooth_outline(base, BA, zone, width=2.6):
     _,(iy,ix)=ndimage.distance_transform_edt(~inner,return_indices=True); fill=base[iy,ix]
     t=np.clip((sd-width)/1.6+0.5,0,1)[...,None]   # 0=선, 1=안쪽
     col=OUTL*(1-t)+fill*t
-    z=zone&(sd>-2)&(sd<width+4.5)
+    z=zone&(sd>-2)&(sd<width+4.5)&recolor
+    if not recolor:   # 색은 그대로, 바깥 가장자리만: 밖으로 번진 곳은 선 색으로
+        zz=zone&(sd>-2)&(sd<1.2)&(BA[...,3]<128); base[zz]=OUTL
     base[z]=col[z]; BA[...,:3][z]=base[z].astype(np.uint8); BA[...,3][zone]=(a_new[zone]*255).astype(np.uint8)
     return base,BA
 # 손가락 사이 진한 분홍 그림자를 옅게(피부색 쪽으로 60%)
@@ -156,8 +176,22 @@ limbz&=(yy>480)
 handz=limbz&((segdist(P,J['hand_l'],(103,716))<70)|(segdist(P,J['hand_r'],(634,716))<70))
 bv=base; pk=handz&(bv[...,0]-bv[...,1]>38)&(bv.sum(-1)>430)&(BA[...,3]>128)
 skinc=np.median(base[handz&(BA[...,3]>200)&(bv.sum(-1)>700)],0)
-base[pk]=base[pk]*0.4+skinc*0.6; BA[...,:3][pk]=base[pk].astype(np.uint8); print('finger pink px',int(pk.sum()))
-base,BA=smooth_outline(base,BA,limbz)
+nearl=ndimage.binary_dilation(handz&(bv.sum(-1)<430),iterations=3)
+pk2=pk&nearl; pk1=pk&~nearl
+base[pk2]=skinc; base[pk1]=base[pk1]*0.55+skinc*0.45; pk=pk1|pk2
+base[pk]=base[pk]; BA[...,:3][pk]=base[pk].astype(np.uint8); print('finger pink px',int(pk.sum()))
+# 손가락 안쪽 선: 붙어 있는 진한 선 2~3줄을 가운데 한 줄(AA)로 합침
+from skimage.morphology import skeletonize
+inn=handz&ndimage.binary_erosion(BA[...,3]>128,iterations=5)
+dkh=inn&(base.sum(-1)<540)
+dkc=ndimage.binary_closing(dkh,iterations=2)&inn
+skl=keep_big(skeletonize(dkc),10)
+if 'sheet' in os.path.basename(args.hands or ''): dkc[:]=False
+lineA=np.clip(1.7-ndimage.distance_transform_edt(~skl),0,1)[...,None]
+R=ndimage.binary_dilation(dkc,iterations=1)&inn
+base[R]=(skinc*(1-lineA)+OUTL*lineA)[R]; BA[...,:3][R]=base[R].astype(np.uint8); print('finger lines px',int(R.sum()))
+base,BA=smooth_outline(base,BA,limbz&~handz if 'sheet' in os.path.basename(args.hands or '') else limbz)
+if 'sheet' in os.path.basename(args.hands or ''): base,BA=smooth_outline(base,BA,handz,width=2.4,sig=1.2,recolor=False)   # 손: 손가락 틈은 살리고 계단만 매끈하게
 alpha=BA[...,3]>128
 _h=ndimage.binary_fill_holes(alpha)&~alpha; _h=_h&~keep_big(_h,200)   # 다시 그리며 생긴 작은 틈(겨드랑이)만 메움
 if _h.any():
@@ -219,7 +253,7 @@ hm&=~(ring&~pink&~dark&alpha)
 front=hm&alpha&(yy<300); back=hm&~front
 armz=ndimage.binary_dilation(np.isin(own,[names.index(x) for x in names if x.startswith(('upperarm','forearm','hand'))])&alpha,iterations=3)
 armz|=(segdist(P,J['hand_l'],(103,716))<70)|(segdist(P,J['hand_r'],(634,716))<70)   # 손 근처(다른 그림의 손 선)는 머리카락 아님
-back=keep_big(back&~armz,600)    # 팔 위에 걸친 머리카락은 뒤로 못 감 → 뺀다(팔이 움직이면 떨어져 보임)
+back=keep_big(back&~armz&~(ndimage.binary_dilation(armz,iterations=12)&(yy>470)&(yy<580)),600)   # 팔꿈치 둘레 머리 끝 조각·배경 틈 정리    # 팔 위에 걸친 머리카락은 뒤로 못 감 → 뺀다(팔이 움직이면 떨어져 보임)
 # 뒷머리는 몸 뒤로 8px 더 들어가게(가장자리 색 번짐): 옷이 몸보다 넓어도 머리카락과 옷 사이에 배경이 안 비친다
 ext=ndimage.binary_dilation(back,iterations=8)&~back&ndimage.binary_dilation(alpha,iterations=6)&(yy<720)&~(ndimage.binary_dilation(armz,iterations=6)&(yy>525))
 # 머리 윗부분 하이라이트가 바깥선에 붙어 흰 테처럼 보이지 않게: 선에서 2px 안의 밝은 점은 분홍으로 메움(하이라이트는 2px 안쪽으로 물러남)
