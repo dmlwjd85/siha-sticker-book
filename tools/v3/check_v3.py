@@ -1,5 +1,6 @@
 """v3 자동 검사: 실루엣 IoU·구멍, 관절 겹침 px, 관절 색 차이(ΔE), 팔레트 ΔE, 치마 단 > 반바지 단. 400% 확대 시트도 만든다.
 사용: python3 tools/v3/check_v3.py public/v3-demo out_dir  (raw/canon.jpg 은 tools/v3/raw 또는 --raw)"""
+from PIL import ImageDraw, ImageFont
 import json, sys, os
 import numpy as np, cv2
 from PIL import Image
@@ -15,6 +16,7 @@ def compose(outfit, hair=True):
     c=np.zeros((H,W,4),np.float32); fit=sk['outfits'].get(outfit) if outfit else None
     for s in sk['slots']:
         n=s.get('attachment')
+        if fit and s['name'].startswith(('foot','shin')) and s['name'] in fit: n=fit[s['name']]
         if s['name'] in ('top','bottom','eyes') or s['name'].startswith(('socks','shoes','sleeve')): n=fit.get(s['name']) if fit else None
         if s['name']=='arm_up_r': continue
         if not n or (not hair and s['name'].startswith('hair')): continue
@@ -61,12 +63,17 @@ lp=pel[...,:3].astype(int); short=pm&(lp.min(-1)>236)&(np.abs(lp[...,0]-lp[...,2
 res['skirt_hem_y']=sk_b; res['shorts_hem_y']=int(np.where(short.any(1))[0].max()); res['skirt_covers_shorts']=sk_b>res['shorts_hem_y']
 json.dump(res,open(f'{OUT}/checks.json','w'),indent=1,ensure_ascii=False); print(json.dumps(res,ensure_ascii=False))
 # 400% 확대 시트(관절·단 부분)
-crops=[('어깨 L',(250,330)),('팔꿈치 L',(210,513)),('손목 L',(148,626)),('목',(359,330)),('골반',(359,700)),('무릎 R',(425,943)),('발목 R',(448,1146)),('치마 단',(300,795))]
+import glob
+_f=glob.glob('/usr/share/fonts/**/*CJK*',recursive=True)+glob.glob('/usr/share/fonts/**/*Nanum*',recursive=True)
+FNT=ImageFont.truetype(_f[0],16) if _f else ImageFont.load_default()
+crops=[('어깨 L',(250,330)),('팔꿈치 L',(210,513)),('팔꿈치 R',(515,513)),('손목 L',(148,626)),('손목 R',(578,626)),('손 L',(118,672)),('손 R',(608,672)),('소매단 L',(228,468)),
+ ('소매단 R',(492,468)),('양말 L',(272,1095)),('양말 R',(448,1095)),('밑창 L',(258,1200)),('밑창 R',(460,1200)),('무릎 R',(425,943)),('머리 위',(400,66)),('치마 단',(300,795))]
 bg=np.full((H,W,3),[253,238,246],np.float32); a=dress[...,3:]/255; img=(dress[...,:3]*a+bg*(1-a)).astype(np.uint8)
 tiles=[]
 for nm,(x,y) in crops:
-    c=img[max(0,y-30):y+30,max(0,x-30):x+30]; c=cv2.resize(c,(240,240),interpolation=cv2.INTER_NEAREST); tiles.append(c)
-sheet=np.vstack([np.hstack(tiles[:4]),np.hstack(tiles[4:])]); Image.fromarray(sheet).save(f'{OUT}/crops400.png')
+    c=img[max(0,y-30):y+30,max(0,x-30):x+30]; c=cv2.resize(c,(240,240),interpolation=cv2.INTER_NEAREST)
+    t=Image.fromarray(c); ImageDraw.Draw(t).text((4,2),nm,fill=(0,0,200),font=FNT); tiles.append(np.array(t))
+sheet=np.vstack([np.hstack(tiles[i:i+4]) for i in range(0,16,4)]); Image.fromarray(sheet).save(f'{OUT}/crops400.png')
 
 # 선 검사: 조각 바깥 테두리(2px) 중 진한 선(#6E3D5B 계열) 비율 — 팔다리도 얼굴만큼 선이 있어야 함
 OUTL=lab(np.array([[110,61,91]],np.float32))[0]
@@ -124,6 +131,7 @@ def render(pose, mark_under=False, hair=True, up=False):
         if SW and up and s['name'] in SW['hide']: continue
         if SW and not up and s['name'] in SW['show']: continue
         n=fit.get('arm_up_r',s.get('attachment')) if s['name']=='arm_up_r' else s.get('attachment')
+        if fit and s['name'].startswith(('foot','shin')) and s['name'] in fit: n=fit[s['name']]
         if s['name'] in ('top','bottom','eyes') or s['name'].startswith(('socks','shoes','sleeve')): n=fit.get(s['name'])
         if not n or (not hair and s['name'].startswith('hair')): continue
         key=(s['name'],n)

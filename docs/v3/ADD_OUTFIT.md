@@ -19,3 +19,7 @@ Spine 으로 옮기기: `skeleton.json` 은 Spine JSON 모양(bones/slots/skins/
 ## 손 흔들기 그림까지 함께 넣기
 `--outfit 이름=옷.jpg,옷_흔들기.jpg` 처럼 쉼표 뒤에 "오른팔을 든" 옷 그림을 주면 흔들기 동작의 팔 조각(arm_up_r)도 그 옷으로 바뀝니다.
 기본값: `basic=outfit_lines.jpg,outfit_wave.jpg`, 바탕 `body_lines_raw.jpg`, 흔들기 바탕 `body_wave.jpg`.
+
+## 손 그림 / 신발·양말 속 조각
+- `--hands hands_relaxed.jpg`: 손가락 모은 손 그림(GenerateImage). 손목 기준으로 돌려 팔 방향에 맞춘 뒤 손목 아래만 바꿉니다.
+- 옷마다 `inshoe_foot_*`(신발 안 발), `insock_shin_*`(양말 안 정강이) 조각이 자동으로 생깁니다. 맨발 발가락이나 다리 선이 신발·양말 밖으로 나오지 않게 합니다.

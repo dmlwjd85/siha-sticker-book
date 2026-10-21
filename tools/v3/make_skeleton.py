@@ -32,7 +32,7 @@ for s,bone,a in order:
     if s=='eyes': skin[s]={'eyes_closed':att(b['eyes'])}
     elif s=='arm_up_r': skin[s]={a['name']:att(a),**{c['name']:att(c) for c in CS.get('arm_up_r',[])}}; sl['attachment']=a['name']
     elif isinstance(a,list): skin[s]={c['name']:att(c) for c in a}   # 옷 슬롯: 기본은 비어 있음, 옷이 고름
-    else: skin[s]={a['name']:att(a)}; sl['attachment']=a['name']
+    else: skin[s]={a['name']:att(a),**{c['name']:att(c) for c in CS.get(s,[])}}; sl['attachment']=a['name']
     slots.append(sl)
 for f in os.listdir(f'{BD}/parts'): shutil.copy(f'{BD}/parts/{f}',f'{DST}/parts/{f}')
 outfits={}

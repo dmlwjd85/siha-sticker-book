@@ -363,10 +363,10 @@
     "hair_back": {
      "hair_back": {
       "path": "parts/hair_back.png",
-      "x": 162,
-      "y": 49,
-      "width": 395,
-      "height": 515
+      "x": 161,
+      "y": 48,
+      "width": 396,
+      "height": 510
      }
     },
     "thigh_l": {
@@ -394,11 +394,25 @@
       "y": 909,
       "width": 77,
       "height": 247
+     },
+     "basic_insock_shin_l": {
+      "path": "parts/basic_insock_shin_l.png",
+      "x": 241,
+      "y": 909,
+      "width": 76,
+      "height": 246
      }
     },
     "shin_r": {
      "shin_r": {
       "path": "parts/shin_r.png",
+      "x": 402,
+      "y": 918,
+      "width": 77,
+      "height": 237
+     },
+     "basic_insock_shin_r": {
+      "path": "parts/basic_insock_shin_r.png",
       "x": 402,
       "y": 918,
       "width": 77,
@@ -412,6 +426,13 @@
       "y": 1117,
       "width": 75,
       "height": 99
+     },
+     "basic_inshoe_foot_l": {
+      "path": "parts/basic_inshoe_foot_l.png",
+      "x": 233,
+      "y": 1138,
+      "width": 70,
+      "height": 66
      }
     },
     "foot_r": {
@@ -421,6 +442,13 @@
       "y": 1115,
       "width": 75,
       "height": 102
+     },
+     "basic_inshoe_foot_r": {
+      "path": "parts/basic_inshoe_foot_r.png",
+      "x": 416,
+      "y": 1138,
+      "width": 69,
+      "height": 66
      }
     },
     "socks_l": {
@@ -444,19 +472,19 @@
     "shoes_l": {
      "basic_shoes_foot_l": {
       "path": "parts/basic_shoes_foot_l.png",
-      "x": 230,
-      "y": 1124,
-      "width": 76,
-      "height": 83
+      "x": 229,
+      "y": 1122,
+      "width": 78,
+      "height": 87
      }
     },
     "shoes_r": {
      "basic_shoes_foot_r": {
       "path": "parts/basic_shoes_foot_r.png",
-      "x": 413,
-      "y": 1127,
-      "width": 75,
-      "height": 80
+      "x": 412,
+      "y": 1125,
+      "width": 78,
+      "height": 84
      }
     },
     "pelvis": {
@@ -499,9 +527,9 @@
      "eyes_closed": {
       "path": "parts/eyes_closed.png",
       "x": 241,
-      "y": 138,
+      "y": 133,
       "width": 234,
-      "height": 111
+      "height": 116
      }
     },
     "upperarm_l": {
@@ -528,7 +556,7 @@
       "x": 208,
       "y": 537,
       "width": 301,
-      "height": 250
+      "height": 249
      }
     },
     "top": {
@@ -537,7 +565,7 @@
       "x": 201,
       "y": 337,
       "width": 315,
-      "height": 305
+      "height": 304
      }
     },
     "sleeve_l": {
@@ -561,52 +589,52 @@
     "forearm_l": {
      "forearm_l": {
       "path": "parts/forearm_l.png",
-      "x": 125,
+      "x": 124,
       "y": 486,
-      "width": 113,
+      "width": 114,
       "height": 152
      }
     },
     "hand_l": {
      "hand_l": {
       "path": "parts/hand_l.png",
-      "x": 78,
-      "y": 610,
-      "width": 86,
-      "height": 104
+      "x": 97,
+      "y": 609,
+      "width": 69,
+      "height": 107
      }
     },
     "forearm_r": {
      "forearm_r": {
       "path": "parts/forearm_r.png",
-      "x": 484,
+      "x": 483,
       "y": 493,
-      "width": 111,
-      "height": 150
+      "width": 112,
+      "height": 151
      }
     },
     "hand_r": {
      "hand_r": {
       "path": "parts/hand_r.png",
-      "x": 559,
-      "y": 611,
-      "width": 82,
-      "height": 104
+      "x": 556,
+      "y": 609,
+      "width": 64,
+      "height": 110
      }
     },
     "arm_up_r": {
      "arm_up_r": {
       "path": "parts/arm_up_r.png",
-      "x": 447,
+      "x": 449,
       "y": 258,
-      "width": 162,
+      "width": 160,
       "height": 258
      },
      "basic_arm_up_r": {
       "path": "parts/basic_arm_up_r.png",
-      "x": 396,
+      "x": 399,
       "y": 257,
-      "width": 241,
+      "width": 238,
       "height": 252
      }
     },
@@ -626,8 +654,12 @@
   "basic": {
    "socks_l": "basic_socks_shin_l",
    "shoes_l": "basic_shoes_foot_l",
+   "foot_l": "basic_inshoe_foot_l",
+   "shin_l": "basic_insock_shin_l",
    "socks_r": "basic_socks_shin_r",
    "shoes_r": "basic_shoes_foot_r",
+   "foot_r": "basic_inshoe_foot_r",
+   "shin_r": "basic_insock_shin_r",
    "sleeve_l": "basic_sleeve_upperarm_l",
    "sleeve_r": "basic_sleeve_upperarm_r",
    "top": "basic_top_chest",
