@@ -16,7 +16,7 @@ SRC=_SRC if _SRC.endswith(os.sep) else _SRC+os.sep
 fit=json.load(open(os.path.join(HERE,'sticker_fit/fit.json')))
 RES=4                 # 저장 해상도 = 스테이지 1단위당 4px (DPR 3 폰에서 몸 350css px → 1050px 필요, 1200px 제공)
 OX,OY,SW,SH=30,40,360,650
-PUB='siha-dress-book/public/sticker'; DATA='siha-dress-book/src/sticker/data'
+PUB='public/sticker'; DATA='src/sticker/data'
 os.makedirs(PUB+'/x4', exist_ok=True); os.makedirs(PUB+'/bg', exist_ok=True)
 os.makedirs(DATA+'/parts', exist_ok=True); os.makedirs(DATA+'/characters', exist_ok=True); os.makedirs(DATA+'/backgrounds', exist_ok=True)
 L='4e40d8/'

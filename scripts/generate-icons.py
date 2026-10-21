@@ -5,10 +5,10 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 # 머리·손까지 한 장으로 보이는 v2 전신. 원본은 건드리지 않는다.
-SRC = ROOT / "siha-dress-book/public/sticker/x4/siha-body-v2.png"
-OUT = ROOT / "siha/icons"
+SRC = ROOT / "public/sticker/x4/siha-body-v2.png"
+OUT = ROOT / "public/icons"
 
 BG_ANY = (243, 228, 210, 255)  # #f3e4d2
 BG_MASK = (255, 143, 184, 255)  # #ff8fb8

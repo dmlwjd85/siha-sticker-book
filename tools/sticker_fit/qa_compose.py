@@ -5,8 +5,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from partjson import pieces_of, occ_of, slot_of, size_of
 
-D = 'siha-dress-book/src/sticker/data/'
-P = 'siha-dress-book/public/sticker/'
+D = 'src/sticker/data/'
+P = 'public/sticker/'
 LAY = json.load(open(D + 'layers.json'))
 Z = {k: (i + 1) * 100 for i, k in enumerate(LAY['order'])}
 CH = json.load(open(D + 'characters/siha.json'))

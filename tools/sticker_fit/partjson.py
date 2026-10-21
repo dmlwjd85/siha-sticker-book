@@ -1,7 +1,7 @@
 """부품 JSON (새 형식 + 예전 형식)을 앱과 같은 규칙으로 읽는다."""
 import json, os
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_CHAR = os.path.join(_HERE, '../../siha-dress-book/src/sticker/data/characters/siha.json')
+_CHAR = os.path.join(_HERE, '../../src/sticker/data/characters/siha.json')
 try:
     CHAR_PIECES = {p['key'] for p in json.load(open(_CHAR)).get('pieces') or []}
 except OSError:

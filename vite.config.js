@@ -1,12 +1,11 @@
 import { createHash } from 'node:crypto'
-import { copyFileSync, cpSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const repoRoot = resolve(here, '..')
 
 function listFiles(dir) {
   const out = []
@@ -18,22 +17,9 @@ function listFiles(dir) {
   return out
 }
 
-// 커밋된 siha/icons · siha/privacy.html 을 Vite public 으로 복사해 개발·빌드에 쓴다.
-function copySihaShellToPublic() {
-  const publicDir = join(here, 'public')
-  cpSync(join(repoRoot, 'siha/icons'), join(publicDir, 'icons'), { recursive: true })
-  copyFileSync(join(repoRoot, 'siha/privacy.html'), join(publicDir, 'privacy.html'))
-}
-
 function sihaPwaPlugin() {
   return {
     name: 'siha-pwa',
-    buildStart() {
-      copySihaShellToPublic()
-    },
-    configureServer() {
-      copySihaShellToPublic()
-    },
     closeBundle() {
       const dist = join(here, 'dist')
       if (!existsSync(join(dist, 'sw.js'))) return
@@ -56,9 +42,9 @@ function sihaPwaPlugin() {
   }
 }
 
-// base './' : GitHub Pages 하위 경로 /bgw/siha/ 와 Capacitor 파일 루트 모두에서 상대 경로가 동작한다.
+// GitHub Pages: https://dmlwjd85.github.io/siha-sticker-book/
 export default defineConfig({
   plugins: [react(), sihaPwaPlugin()],
-  base: './',
+  base: '/siha-sticker-book/',
   server: { port: 5178, strictPort: true },
 })
