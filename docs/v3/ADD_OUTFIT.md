@@ -1,25 +1,17 @@
-# 새 옷 넣는 법 (v3 뼈대)
+# 옷 한 벌 더하기
 
-1. **그림 만들기**: `docs/v3/PROMPTS.md` 의 "옷" 틀 + 참고 이미지 `tools/v3/raw/canon.jpg` 로 GenerateImage. 결과를 `tools/v3/raw/` 에 아무 이름으로 저장(원본은 고치지 않는다).
-2. **조각 내기** (파일 이름 바꾸기 없음, 인자나 설정으로):
-   - `python3 tools/v3/build_v3.py tools/v3/raw <out> --outfit basic=outfit.jpg --outfit summer=summer_dress.jpg`
-   - 또는 `--config outfits.json` (`{"outfits": {"basic": "outfit.jpg", "summer": "summer_dress.jpg"}}`)
-   - 아무것도 안 주면 `basic=outfit.jpg`. 조각 이름은 `<옷이름>_<종류>_<뼈>.png`.
-   - 코드가 하는 일: 배경 지우기 → 캐논에 맞춰 정렬(ECC) → 캐논과 색이 다른 곳 = 옷 → 가까운 뼈로 나눔
-     (가슴=윗옷, 윗팔=소매, 골반=치마/바지, 정강이=양말, 발=신발(빨강 등 신발 색)).
-3. **뼈대 넣기**: `python3 tools/v3/make_skeleton.py public/v3-demo <out>` → `skeleton.json` 의 `outfits` 에 `{"<이름>": {"top":…, "bottom":…, "sleeve_l":…, …}}` 가 들어간다.
-4. **검사**: `python3 tools/v3/check_v3.py public/v3-demo <qa> tools/v3/raw/canon.jpg`
-   - `wave_seam_ok: true`(손 흔들기 25 프레임: 이음새 ≤6px 더, 손끝 무대 안), `fringe_ok: true`(흰 테두리 <1%)
-   - `silhouette_iou ≥ 0.98`, `holes ≤ 2`, `joint_overlap_ok_8_12: true`, `skirt_covers_shorts: true`, 팔레트 ΔE p50 ≤ 10.
-   - `<qa>/crops400.png`(관절 + 손 흔들기 25 프레임 어깨 400% 확대)를 눈으로 본다: 이음새·흰 테두리가 없어야 한다.
-5. 390px 폰과 1280px 에서 손 흔들기까지 보고 PR.
+1. `PROMPTS.md`의 틀로 `outfit.jpg`(쉬는 자세)와 `outfit_wave.jpg`(손 흔드는 자세) **두 장**을 만든다. 둘 다 없으면 흔들 때 소매가 몸에 남는다.
+2. `tools/v3/raw/`에 `{이름}.jpg`, `{이름}_wave.jpg`로 넣고 `python3 tools/v3/build_v3.py && python3 tools/v3/make_skeleton.py` 실행. 결과는 `public/v3-demo/parts`, `skeleton.json`.
+3. 확인: `npx vite preview --port 4179` 켠 뒤 `node tools/v3/check_frames.mjs` → `python3 tools/v3/check_frames.py /tmp/frames`. `"pass": true`여야 한다.
 
-Spine 으로 옮기기: `skeleton.json` 은 Spine JSON 모양(bones/slots/skins/animations). y 가 아래로 가므로 Spine 에선 y 와 rotation 부호를 뒤집는다.
+## 조각을 뼈에 붙이는 규칙
+- **윗옷은 `fit_upper`(가슴 뼈), 아래옷·양말·신발은 `fit_lower`(허리 아래)**. 자르는 줄은 720 기준 y=640, 위·아래가 6px 겹친다(숨쉬기 때 틈 방지).
+- **소매는 팔 뼈를 따른다.** 흔드는 쪽 소매는 쉬는 그림에 두지 말고 `outfit_wave`에서 가져와 `*_upper_wave`·`*_wave_arm_0~8` 조각에 넣는다. 팔뚝 휘기(−10°~10°, 9장)도 소매째 미리 만든다. 따로 떨어진 소매 조각을 만들지 않는다.
+- **흔들기 전환은 바뀐 자리만.** 쉬는 그림과 흔드는 그림이 다른 곳(마스크 `dm`, x≥430·150<y<740)만 흔드는 그림으로 바꾼다. 마스크 밖이 달라지면 옷 그림을 다시 만든다.
+- **마이크 손은 소품 뼈 `prop_r`.** 손잡이가 주먹 안에서 끝나게 하고, 주먹+팔뚝 조각(`hand_r`, 옷 제외)을 마이크 위에 그린다. 소매가 팔뚝까지 오면 그 소매도 `hand_r` 아래에 둔다.
+- 머리카락이 어깨·소매에 닿는 곳은 쉬는 머리를 흔드는 머리 위에 덮어 흰 틈을 없앤다(`hair_back_wave`).
+- 겹침은 아래 조각이 6px 이상 들어가게, 틈은 400%에서 0.
 
-## 손 흔들기 그림까지 함께 넣기
-`--outfit 이름=옷.jpg,옷_흔들기.jpg` 처럼 쉼표 뒤에 "오른팔을 든" 옷 그림을 주면 흔들기 동작의 팔 조각(arm_up_r)도 그 옷으로 바뀝니다.
-기본값: `basic=outfit_lines.jpg,outfit_wave.jpg`, 바탕 `body_lines_raw.jpg`, 흔들기 바탕 `body_wave.jpg`.
-
-## 손 그림 / 신발·양말 속 조각
-- `--hands hands_sheet.jpg`(기본): 손 두 개만 그린 그림표(GenerateImage, 손가락마다 선 하나). 이름에 sheet 가 들어가면 그림표로 읽습니다. `hands_relaxed.jpg` 같은 전신 그림도 됩니다. 손목 기준으로 돌려 팔 방향에 맞춘 뒤 손목 아래만 바꿉니다.
-- 옷마다 `inshoe_foot_*`(신발 안 발), `insock_shin_*`(양말 안 정강이) 조각이 자동으로 생깁니다. 맨발 발가락이나 다리 선이 신발·양말 밖으로 나오지 않게 합니다.
+## 마감 점검
+- 선 굵기 한결같음(검사기 `linewidth` 값이 쉬는 자세와 같음), 점·두 줄 선·후광 없음.
+- 전 프레임 검사: 떨어진 조각, 얇은 틈, 상자 밖 변화, 남은 조각, 새 이음새 모두 0.
