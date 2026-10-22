@@ -22,7 +22,7 @@ sk={'skeleton':{'spine':'4.2-like','width':1440,'height':2560,'scale':S,'stagePa
    'fit_lower':{'basic_lower':P['basic_pelvis'],'basic_lower_wave':P['basic_pelvis_wave']},
    'fit_upper':{'basic_upper':P['basic_chest'],'basic_upper_wave':P['basic_chest_wave']},
    'eyes':{'eyes_closed':P['eyes_closed']},'hand_r':{'hand_r':P['hand_r']},
-   'prop':{'mic':{'path':'parts/prop_mic.png','grip':0.5,'scale':0.2,'rotation':14}},
+   'prop':{'mic':{'path':'parts/prop_mic.png','grip':0.5,'scale':0.2,'rotation':-8}},
  }}],
  'outfits':{'basic':{'fit_lower':'basic_lower','fit_upper':'basic_upper','wave':{'fit_lower':'basic_lower_wave','fit_upper':'basic_upper_wave'}}},
  'props':{'mic':{'slot':'prop','bone':'prop_r','note':'손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다'}},
