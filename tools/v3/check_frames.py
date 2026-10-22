@@ -41,7 +41,7 @@ def holes(A, im=None):
 def seams(im,A):
     g=im[...,:3].mean(-1); inner=ndimage.binary_erosion(A,iterations=4)
     hx=(g-np.maximum(np.roll(g,2,1),np.roll(g,-2,1))>18); hy=(g-np.maximum(np.roll(g,2,0),np.roll(g,-2,0))>18)
-    return (hx|hy)&inner&~ndimage.binary_dilation(hairish(im),iterations=1)   # 머리카락 결 사이 밝은 줄은 그림(이음새 아님)
+    return (hx|hy)&inner&~ndimage.binary_dilation(hairish(im),iterations=4)   # 머리카락 결 사이 밝은 줄은 그림(이음새 아님)
 def new_seams(s, base):
     """쉬는 자세에 없던 밝은 줄(12px 넘게 이어짐) 수"""
     s=s&~ndimage.binary_dilation(base,iterations=3); lb,n=ndimage.label(s); sz=ndimage.sum(s,lb,range(1,n+1)) if n else []
