@@ -1,49 +1,44 @@
-"""build.json → skeleton.json (Spine JSON 과 같은 모양: bones/slots/skins/animations; 좌표는 y 아래, 변환 시 y 뒤집기)"""
-import json, math, sys, shutil, os
-DST=sys.argv[1]; BD=sys.argv[2] if len(sys.argv)>2 else 'out'
-b=json.load(open(f'{BD}/build.json'))
-bones=[]
-J={n:s for n,p,s,e in b['bones']}
-for n,p,s,e in b['bones']:
-    ps=J[p] if p else (0,0)
-    bones.append({'name':n,**({'parent':p} if p else {}),'x':s[0]-ps[0],'y':s[1]-ps[1],
-                  'rotation':0,'length':round(math.hypot(e[0]-s[0],e[1]-s[1]),1),'rest':{'x':s[0],'y':s[1]}})
-A={a['name']:a for a in b['atts'] if a}
-CS={}  # 슬롯 → [옷 조각]
-for c in b['cloth']: CS.setdefault(c['slot'],[]).append(c)
-def att(a): return {'path':f"parts/{a['name']}.png",'x':a['x'],'y':a['y'],'width':a['w'],'height':a['h']}
-BONE_OF={'socks_l':'shin_l','socks_r':'shin_r','shoes_l':'foot_l','shoes_r':'foot_r','bottom':'pelvis','top':'chest','sleeve_l':'upperarm_l','sleeve_r':'upperarm_r'}
-def cl(*names): return [(n,BONE_OF[n],CS.get(n,[])) for n in names]
-order=[('hair_back','head',b['hair'][0])]
-for n in ['thigh_l','thigh_r','shin_l','shin_r','foot_l','foot_r']: order.append((n,n,A[n]))
-order+=cl('socks_l','socks_r','shoes_l','shoes_r')
-for n in ['pelvis','chest','neck','head']: order.append((n,n,A[n]))
-order+=[('eyes','head',None)]
-# 윗팔은 윗옷 밑(어깨 이음새·민소매를 옷이 덮음), 소매는 윗팔과 같이 돌고, 아래팔·손은 맨 위
-for n in ['upperarm_l','upperarm_r']: order.append((n,n,A[n]))
-order+=cl('bottom','top','sleeve_l','sleeve_r')
-for n in ['forearm_l','hand_l','forearm_r','hand_r']: order.append((n,n,A[n]))
-# 손 흔들기 팔(그림 갈아 끼우기): 소매까지 한 장이라 소매가 늘 팔 뿌리를 위에서 덮는다
-order.append(('arm_up_r','arm_up_r',b['wave_body']))
-order.append(('hair_front','head',b['hair'][1]))
-slots=[];skin={}
-for s,bone,a in order:
-    sl={'name':s,'bone':bone}
-    if s=='eyes': skin[s]={'eyes_closed':att(b['eyes'])}
-    elif s=='arm_up_r': skin[s]={a['name']:att(a),**{c['name']:att(c) for c in CS.get('arm_up_r',[])}}; sl['attachment']=a['name']
-    elif isinstance(a,list): skin[s]={c['name']:att(c) for c in a}   # 옷 슬롯: 기본은 비어 있음, 옷이 고름
-    else: skin[s]={a['name']:att(a),**{c['name']:att(c) for c in CS.get(s,[])}}; sl['attachment']=a['name']
-    slots.append(sl)
-for f in os.listdir(f'{BD}/parts'): shutil.copy(f'{BD}/parts/{f}',f'{DST}/parts/{f}')
-outfits={}
-for c in b['cloth']: outfits.setdefault(c['outfit'],{})[c['slot']]=c['name']
-anims={'blink':{'period':4.0,'slots':{'eyes':{'attachment':[{'time':0,'name':None},{'time':3.82,'name':'eyes_closed'},{'time':3.95,'name':None}]}}},
- 'breathe':{'period':3.2,'bones':{'chest':{'scale':[{'time':0,'y':1},{'time':1.6,'y':1.012},{'time':3.2,'y':1}]},'head':{'translate':[{'time':0,'y':0},{'time':1.6,'y':-1.5},{'time':3.2,'y':0}]}}},
- # 손 흔들기 = 자세 바꾸기(swap) + 어깨 안쪽 축으로 살짝 흔들기(±4°). 팔을 돌려 들지 않으므로 이음새가 안 생긴다.
- 'wave':{'period':1.6,'swap':{'on':0.06,'off':1.54,'hide':['upperarm_r','forearm_r','hand_r','sleeve_r'],'show':['arm_up_r']},
-   'bones':{'arm_up_r':{'rotate':[{'time':0,'value':0},{'time':0.2,'value':0},{'time':0.45,'value':-4},{'time':0.75,'value':3},{'time':1.05,'value':-4},{'time':1.3,'value':0},{'time':1.6,'value':0}]}}}}
-accs=[{'name':a['name'],'path':f"parts/{a['name']}.png",'width':a['w'],'height':a['h']} for a in b['accs']]
-json.dump({'skeleton':{'spine':'4.2-like','width':b['size'][0],'height':b['size'][1],'stagePad':80,'note':'y-down; stagePad=무대 좌우 여백(px); Spine 로 옮길 때 y·rotation 부호 반대'},
- 'bones':bones,'slots':slots,'skins':[{'name':'default','attachments':skin}],'outfits':outfits,'accessories':accs,'animations':anims},
- open(f'{DST}/skeleton.json','w'),ensure_ascii=False,indent=1)
-print('slots',len(slots),'bones',len(bones))
+"""parts.json → skeleton.json (Spine 비슷한 뼈·슬롯·스킨·옷·움직임). 좌표는 2배 캔버스(1440x2560), y 아래로."""
+import json, sys, os
+from build_v3 import CUT, GRIP, ELBOW_R, WAVE_PIVOT, WAVE_ANGLES, S
+OUT=sys.argv[1] if len(sys.argv)>1 else 'out'
+P=json.load(open(f'{OUT}/parts.json'))
+s2=lambda p:{'x':p[0]*S,'y':p[1]*S}
+bones=[('root',None,(360,CUT)),('pelvis','root',(360,CUT)),('chest','pelvis',(360,CUT)),('neck','chest',(360,330)),('head','neck',(360,300)),
+ ('upperarm_r','chest',(275,370)),('forearm_r','upperarm_r',ELBOW_R),('hand_r','forearm_r',GRIP),('prop_r','hand_r',GRIP),
+ ('upperarm_l','chest',(445,370)),('forearm_l','upperarm_l',WAVE_PIVOT),('hand_l','forearm_l',(530,300))]
+sk={'skeleton':{'spine':'4.2-like','width':1440,'height':2560,'scale':S,'stagePad':160,
+   'note':'y 아래로. 원본 720x1280 그림을 2배로 다듬음. 기본 자세 = 한 손 마이크(주먹 안 소품 슬롯 prop_r), 다른 손 아래로 가볍게 쥠'},
+ 'bones':[{'name':n,**({'parent':p} if p else {}),'rest':s2(r)} for n,p,r in bones],
+ 'slots':[{'name':'hair_back','bone':'head','attachment':'hair_back'},
+   {'name':'body_lower','bone':'pelvis','attachment':'body_lower'},{'name':'fit_lower','bone':'pelvis'},
+   {'name':'body_upper','bone':'chest','attachment':'body_upper'},{'name':'fit_upper','bone':'chest'},
+   {'name':'wave_arm','bone':'chest'},{'name':'eyes','bone':'head'},{'name':'hair_front','bone':'head','attachment':'hair_front'},
+   {'name':'prop','bone':'prop_r','attachment':'mic'},{'name':'hand_r','bone':'hand_r','attachment':'hand_r'}],
+ 'skins':[{'name':'default','attachments':{
+   'hair_back':{'hair_back':P['hair_back'],'hair_back_wave':P['hair_back_wave']},'hair_front':{'hair_front':P['hair_front']},
+   'body_lower':{'body_lower':P['pelvis'],'body_lower_wave':P['pelvis_wave']},
+   'body_upper':{'body_upper':P['chest'],'body_upper_wave':P['chest_wave']},
+   'fit_lower':{'basic_lower':P['basic_pelvis'],'basic_lower_wave':P['basic_pelvis_wave']},
+   'fit_upper':{'basic_upper':P['basic_chest'],'basic_upper_wave':P['basic_chest_wave']},
+   'eyes':{'eyes_closed':P['eyes_closed']},'hand_r':{'hand_r':P['hand_r']},
+   'prop':{'mic':{'path':'parts/prop_mic.png','grip':0.5,'scale':0.2,'rotation':14}},
+ }}],
+ 'outfits':{'basic':{'fit_lower':'basic_lower','fit_upper':'basic_upper','wave':{'fit_lower':'basic_lower_wave','fit_upper':'basic_upper_wave'}}},
+ 'props':{'mic':{'slot':'prop','bone':'prop_r','note':'손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다'}},
+ 'animations':{
+   'blink':{'period':4.2,'slots':{'eyes':{'attachment':[{'time':0,'name':None},{'time':3.95,'name':'eyes_closed'},{'time':4.1,'name':None}]}}},
+   'breathe':{'period':3.2,'bones':{'chest':{'scale':[{'time':0,'y':1},{'time':1.6,'y':1.006},{'time':3.2,'y':1}]}}},
+   'wave':{'period':1.6,'repeat':2,'swap':{'hair_back':'hair_back_wave','body_lower':'body_lower_wave','body_upper':'body_upper_wave'},
+     'frames':[{'angle':f['angle'],'body':f['body'],'basic':f['basic']} for f in P['wave_frames']],
+     'angle':[{'time':0,'value':0},{'time':0.4,'value':10},{'time':0.8,'value':-10},{'time':1.2,'value':10},{'time':1.6,'value':0}]},
+   'mic_bob':{'period':3.2,'note':'숨쉬기와 같이 주먹·마이크가 가슴 뼈를 따라 살짝 오르내림(따로 키 없음)'}},
+ 'accessories':[{'name':'acc_ribbon','path':'parts/acc_ribbon.png'},{'name':'acc_star','path':'parts/acc_star.png'}]}
+from PIL import Image
+for a in sk['accessories']:
+    w,h=Image.open(f"{OUT}/{a['path']}").size; a['width'],a['height']=w,h
+m=Image.open(f'{OUT}/parts/prop_mic.png'); fh=json.load(open(f'{OUT}/mic_meta.json'))['full_h']
+sk['skins'][0]['attachments']['prop']['mic'].update(width=m.width,height=m.height,grip=round(0.5*fh/m.height,4))   # grip = 잘린 그림 높이 기준 손잡이 가운데
+wm=json.load(open(f'{OUT}/wave_meta.json'))['wave_change_box']; from build_v3 import WAVE_BOX
+sk['animations']['wave']['changeBox']=[min(wm[0],WAVE_BOX[0])*S,min(wm[1],WAVE_BOX[1])*S,max(wm[2],WAVE_BOX[2])*S,max(wm[3],WAVE_BOX[3])*S]   # 흔들기 때 바뀌어도 되는 곳(검사용)
+json.dump(sk,open(f'{OUT}/skeleton.json','w'),ensure_ascii=False,indent=1); print('skeleton ok')
