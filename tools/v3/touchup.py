@@ -67,7 +67,7 @@ def fill_slivers(a, it=2, offs=(2,3,4), box=None):
         if box is not None: inner&=box
         for ax,o in [(ax,o) for ax in (1,0) for o in offs]:
             l1=np.roll(L,o,ax); l2=np.roll(L,-o,ax); m=inner&(L-np.maximum(l1,l2)>14)&(np.maximum(l1,l2)<150)
-            avg=(np.roll(g,o,ax)+np.roll(g,-o,ax))/2
+            g1=np.roll(g,o,ax); g2=np.roll(g,-o,ax); avg=np.where((l1>=l2)[...,None],g1,g2)   # 밝은 쪽 이웃색(어두운 덩어리 방지)
             a[...,:3][m]=avg[m].astype(np.uint8); L=a[...,:3].astype(float).mean(-1); g=a[...,:3].astype(float)
     return a
 def union_holes(names):
