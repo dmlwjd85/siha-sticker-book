@@ -35,14 +35,35 @@ def holes(A, im=None):
         if v>3: continue
         keep.append(i+1)
     return np.isin(lb,keep)
+def outlined_hair_gap(A, im, box):
+    """좁은 예외(문서: docs/v3/STYLE_GUIDE.md '검사 예외'): 흔드는 팔 상자 안에서, 둘레(2px 띠)의 70% 이상이 진한 외곽선이고
+    30% 이상이 머리카락 외곽 쪽인 틈 = 따로 외곽선이 그려진 머리카락과 팔 사이로 보이는 진짜 배경(원래 그림의 두 외곽선 사이).
+    조각 안이 찢어진 틈은 둘레가 바탕색이라 여기에 걸리지 않는다."""
+    h=holes(A,im); lb,n=ndimage.label(h); keep=np.zeros_like(h)
+    dk=(im[...,:3].sum(-1)<330)&A; hr=ndimage.binary_dilation(hairish(im)&A,iterations=3)
+    for i in range(1,n+1):
+        m=lb==i
+        if (m&~box).any(): continue
+        ring=ndimage.binary_dilation(m,iterations=2)&~m
+        if dk[ring].mean()>=0.7 and hr[ring].mean()>=0.3: keep|=m
+    return keep
 def seams(im,A):
     g=im[...,:3].mean(-1); inner=ndimage.binary_erosion(A,iterations=4)
     hx=(g-np.maximum(np.roll(g,2,1),np.roll(g,-2,1))>18); hy=(g-np.maximum(np.roll(g,2,0),np.roll(g,-2,0))>18)
     return (hx|hy)&inner
-def new_seams(s, base):
-    """쉬는 자세에 없던 밝은 줄(12px 넘게 이어짐) 수"""
-    s=s&~ndimage.binary_dilation(base,iterations=3); lb,n=ndimage.label(s); sz=ndimage.sum(s,lb,range(1,n+1)) if n else []
-    return int(sum(1 for v in sz if v>=12))
+def new_seams(s, base, im=None, box=None):
+    """쉬는 자세에 없던 밝은 줄(12px 넘게 이어짐) 수.
+    좁은 예외(흔들기 프레임·흔드는 팔 상자 안만, 문서: STYLE_GUIDE '검사 예외'): 줄 픽셀 중앙값이 머리카락 바탕색(분홍, r-g>40·b>g)이면
+    두 외곽선 사이로 보이는 원래 머리 그림이다. 조각 사이 틈·흰 테는 흰/회색(채도 낮음)이라 이 예외에 걸리지 않는다."""
+    s=s&~ndimage.binary_dilation(base,iterations=3); lb,n=ndimage.label(s); cnt=0
+    for i in range(1,n+1):
+        m=lb==i
+        if m.sum()<12: continue
+        if im is not None and box is not None and not (m&~box).any():
+            r,g,b=np.median(im[m][:,:3],0)
+            if r-g>40 and b>g: continue
+        cnt+=1
+    return cnt
 def linew(im,A):
     dk=(im[...,:3].astype(int).sum(-1)<330)&A; d=ndimage.distance_transform_edt(dk)
     sk=dk&(d>=ndimage.maximum_filter(d,3)); v=d[sk]*2
@@ -59,7 +80,9 @@ for tag in ('basic','none'):
     oy,ox=_BOX[0],_BOX[2]; box=np.zeros_like(RA); box[max(int(y0*K)-6-oy,0):int(y1*K)+6-oy,max(int((x0+PAD)*K)-6-ox,0):int((x1+PAD)*K)+6-ox]=True
     for f in fr:
         n=f['name']; im=load(n); A=im[...,3]>128
-        c=comps(A); nh=int((holes(A,im)&~ndimage.binary_dilation(base_h,iterations=6)).sum()); s=new_seams(seams(im,A),base_S); w=linew(im,A)
+        c=comps(A); hh=holes(A,im)&~ndimage.binary_dilation(base_h,iterations=6)
+        if '_wave_' in n: hh&=~outlined_hair_gap(A,im,box)
+        nh=int(hh.sum()); s=new_seams(seams(im,A),base_S,im if '_wave_' in n else None,box); w=linew(im,A)
         if c!=base_c: res['fail'].append([n,'떨어짐',c])
         if nh>20: res['fail'].append([n,'틈',nh])
         if s>0: res['fail'].append([n,'이음새',s])

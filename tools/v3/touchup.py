@@ -49,6 +49,27 @@ def soften_ridges(a, it=3):
     return a
 import json
 SK=json.load(open(f'{HERE}/../../public/v3-demo/skeleton.json'))['skins'][0]['attachments']
+def tame_white(a):
+    """머리카락 위 하얀 줄(채도 낮고 밝은 픽셀)을 주변 머리색 중앙값으로 — 결 사이 밝은 줄·잘린 자리 흰 테"""
+    g=a[...,:3].astype(int); L=g.mean(-1); sat=g.max(-1)-g.min(-1); A=a[...,3]>200
+    w=A&(L>205)&(sat<60)
+    if not w.any(): return a
+    med=np.stack([ndimage.median_filter(np.where(w,np.nan_to_num(0),g[...,c]),size=9) for c in range(3)],-1)
+    ok=A&~w; out=a.copy()
+    for c in range(3):
+        num=ndimage.uniform_filter(np.where(ok,g[...,c],0).astype(float),9); den=ndimage.uniform_filter(ok.astype(float),9)
+        out[...,c]=np.where(w&(den>0.05),np.clip(num/np.maximum(den,1e-6),0,255),a[...,c]).astype(np.uint8)
+    return out
+def fill_slivers(a, it=2, offs=(2,3,4), box=None):
+    """두 진한 선 사이에 낀 1~2px 밝은 줄(검사기 '이음새'와 같은 기준: 양옆 2px보다 14 넘게 밝음)을 양옆 평균색으로"""
+    for _ in range(it):
+        g=a[...,:3].astype(float); L=g.mean(-1); inner=ndimage.binary_erosion(a[...,3]>200,iterations=3)
+        if box is not None: inner&=box
+        for ax,o in [(ax,o) for ax in (1,0) for o in offs]:
+            l1=np.roll(L,o,ax); l2=np.roll(L,-o,ax); m=inner&(L-np.maximum(l1,l2)>14)&(np.maximum(l1,l2)<150)
+            avg=(np.roll(g,o,ax)+np.roll(g,-o,ax))/2
+            a[...,:3][m]=avg[m].astype(np.uint8); L=a[...,:3].astype(float).mean(-1); g=a[...,:3].astype(float)
+    return a
 def union_holes(names):
     U=np.zeros((2560,1440),bool)
     for slot,n in names:
@@ -71,6 +92,20 @@ def clear_pocket_rims(a,n=None):
     a[...,3]=np.where(white,0,a[...,3])
     grey=ring&~white&(sat<40)&(L>70)&(a[...,3]>0)
     a[...,:3][grey]=(110,61,91); return a
+BOX=json.load(open(f'{HERE}/../../public/v3-demo/skeleton.json'))['animations']['wave']['changeBox']
+TWINS=[('hair_back','hair_back','hair_back_wave'),('body_lower','body_lower','body_lower_wave'),('body_upper','body_upper','body_upper_wave'),('fit_lower','basic_lower','basic_lower_wave'),('fit_upper','basic_upper','basic_upper_wave')]
+def sync_twins():
+    """흔들기 층을 쉬는 층과 맞춤: 흔드는 팔 상자(changeBox) 밖 픽셀은 쉬는 층 그대로 복사(손질 차이로 생긴 잔상 방지)"""
+    x0,y0,x1,y1=BOX
+    for slot,r,w in TWINS:
+        tr=SK[slot][r]; tw=SK[slot][w]; R=load(r); W=load(w)
+        assert (tr['x'],tr['y'])==(tw['x'],tw['y'])
+        h=min(R.shape[0],W.shape[0]); ww=min(R.shape[1],W.shape[1])
+        yy,xx=np.mgrid[0:h,0:ww]; out=~((xx+tw['x']>=x0)&(xx+tw['x']<x1)&(yy+tw['y']>=y0)&(yy+tw['y']<y1))
+        W[:h,:ww][out]=R[:h,:ww][out]
+        if W.shape[1]>ww:  # 쉬는 층보다 넓은 부분은 상자 밖이면 비움
+            yy2,xx2=np.mgrid[0:W.shape[0],ww:W.shape[1]]; o2=~((xx2+tw['x']>=x0)&(yy2+tw['y']>=y0)&(yy2+tw['y']<y1)); W[:,ww:][o2]=0
+        save(w,W)
 if __name__=='__main__':
     by={}
     for n,b in ERASE: by.setdefault(n,[]).append(b)
@@ -81,4 +116,10 @@ if __name__=='__main__':
     for n,pts in POLY: save(n,erase_poly(load(n),pts))
     save('hand_r',main_only(load('hand_r')))
     for n in ('hair_back','hair_back_wave','hair_front'): save(n,clear_pocket_rims(soften_ridges(load(n)),n))
+    t=SK['hair_back']['hair_back']; x0,y0,x1,y1=BOX
+    for n in ('hair_back','hair_back_wave'):
+        a=load(n); yy,xx=np.mgrid[0:a.shape[0],0:a.shape[1]]
+        bx=(xx+t['x']>=x0-8)&(yy+t['y']>=y0)&(yy+t['y']<y1)   # 흔드는 팔이 비켜 가며 드러나는 머리 부분만
+        save(n,fill_slivers(a,box=bx))
+    sync_twins()
     print('touchup ok')
