@@ -10,6 +10,7 @@
 import json, sys, os, numpy as np
 from PIL import Image
 from scipy import ndimage
+if len(sys.argv)<2: raise SystemExit('사용: python3 tools/v3/check_frames.py <프레임 폴더> [보고서.json]\n(프레임 폴더는 check_frames.mjs 가 만든 곳, 예: /tmp/frames)')
 D=sys.argv[1]; OUTJ=sys.argv[2] if len(sys.argv)>2 else f'{D}/report.json'
 L=json.load(open(f'{D}/frames.json'))
 _BOX=None
@@ -30,7 +31,6 @@ def holes(A, im=None):
     h=ndimage.binary_fill_holes(A)&~A; lb,n=ndimage.label(h)
     if not n: return h
     dt=ndimage.distance_transform_edt(h); mx=ndimage.maximum(dt,lb,range(1,n+1)); keep=[]
-    hr=hairish(im) if im is not None else None
     for i,v in enumerate(mx):
         if v>3: continue
         keep.append(i+1)
@@ -55,15 +55,18 @@ def new_seams(s, base, im=None, box=None):
     """쉬는 자세에 없던 밝은 줄(12px 넘게 이어짐) 수.
     좁은 예외(흔들기 프레임·흔드는 팔 상자 안만, 문서: STYLE_GUIDE '검사 예외'): 줄 픽셀 중앙값이 머리카락 바탕색(분홍, r-g>40·b>g)이면
     두 외곽선 사이로 보이는 원래 머리 그림이다. 조각 사이 틈·흰 테는 흰/회색(채도 낮음)이라 이 예외에 걸리지 않는다."""
-    s=s&~ndimage.binary_dilation(base,iterations=3); lb,n=ndimage.label(s); cnt=0
+    s=s&~ndimage.binary_dilation(base,iterations=3); lb,n=ndimage.label(s); cnt=0; ex=0
     for i in range(1,n+1):
         m=lb==i
         if m.sum()<12: continue
         if im is not None and box is not None and not (m&~box).any():
             r,g,b=np.median(im[m][:,:3],0)
-            if r-g>40 and b>g: continue
+            ys,xs=np.where(m); length=max(ys.ptp(),xs.ptp())+1
+            width=2*ndimage.distance_transform_edt(m).max()   # 줄 폭(px): 2px 이하만
+            if r-g>40 and b>g and width<=SEAM_EX_W and length<=SEAM_EX_LEN: ex+=1; continue
         cnt+=1
-    return cnt
+    return cnt, ex
+SEAM_EX_W=2; SEAM_EX_LEN=40   # 분홍 줄 예외: 폭 2px 이하, 길이 40px 이하만
 def linew(im,A):
     dk=(im[...,:3].astype(int).sum(-1)<330)&A; d=ndimage.distance_transform_edt(dk)
     sk=dk&(d>=ndimage.maximum_filter(d,3)); v=d[sk]*2
@@ -74,7 +77,7 @@ for tag in ('basic','none'):
     rest=load(f'{tag}_idle_000'); RA=rest[...,3]>128
     base_c=comps(RA); base_h=holes(RA,rest); base_S=seams(rest,RA); base_s=0; base_w=linew(rest,RA)
     sk=json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../public/v3-demo/skeleton.json')))
-    st={'rest_components':base_c,'rest_seams':base_s,'rest_linewidth':base_w,'max_new_hole':0,'max_out_of_box':0,'max_orphan':0,'max_seams':base_s,'linewidth_range':[base_w,base_w]}
+    st={'rest_components':base_c,'rest_seams':base_s,'rest_linewidth':base_w,'max_new_hole':0,'max_out_of_box':0,'max_orphan':0,'max_seams':base_s,'linewidth_range':[base_w,base_w],'seam_exempt_total':0,'seam_exempt_frames':0,'seam_exempt_rule':f'분홍 줄, 폭<={SEAM_EX_W}px, 길이<={SEAM_EX_LEN}px, 흔들기 상자 안'}
     H,W=RA.shape; K=FULLW/(sk['skeleton']['width']+2*sk['skeleton']['stagePad']); PAD=sk['skeleton']['stagePad']
     x0,y0,x1,y1=sk['animations']['wave']['changeBox']   # 흔들기 때 바뀌어도 되는 상자(2배 좌표) → 화면 픽셀
     oy,ox=_BOX[0],_BOX[2]; box=np.zeros_like(RA); box[max(int(y0*K)-6-oy,0):int(y1*K)+6-oy,max(int((x0+PAD)*K)-6-ox,0):int((x1+PAD)*K)+6-ox]=True
@@ -82,7 +85,7 @@ for tag in ('basic','none'):
         n=f['name']; im=load(n); A=im[...,3]>128
         c=comps(A); hh=holes(A,im)&~ndimage.binary_dilation(base_h,iterations=6)
         if '_wave_' in n: hh&=~outlined_hair_gap(A,im,box)
-        nh=int(hh.sum()); s=new_seams(seams(im,A),base_S,im if '_wave_' in n else None,box); w=linew(im,A)
+        nh=int(hh.sum()); s,sx=new_seams(seams(im,A),base_S,im if '_wave_' in n else None,box); st['seam_exempt_total']=st.get('seam_exempt_total',0)+sx; st['seam_exempt_frames']=st.get('seam_exempt_frames',0)+(sx>0); w=linew(im,A)
         if c!=base_c: res['fail'].append([n,'떨어짐',c])
         if nh>20: res['fail'].append([n,'틈',nh])
         if s>0: res['fail'].append([n,'이음새',s])
