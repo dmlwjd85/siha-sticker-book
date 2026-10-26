@@ -61,7 +61,7 @@ def new_seams(s, base, im=None, box=None):
         if m.sum()<12: continue
         if im is not None and box is not None and not (m&~box).any():
             r,g,b=np.median(im[m][:,:3],0)
-            ys,xs=np.where(m); length=max(ys.ptp(),xs.ptp())+1
+            ys,xs=np.where(m); length=max(np.ptp(ys),np.ptp(xs))+1
             width=2*ndimage.distance_transform_edt(m).max()   # 줄 폭(px): 2px 이하만
             if r-g>40 and b>g and width<=SEAM_EX_W and length<=SEAM_EX_LEN: ex+=1; continue
         cnt+=1
