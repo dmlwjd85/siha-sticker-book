@@ -105,6 +105,17 @@ def sync_twins():
         if W.shape[1]>ww:  # 쉬는 층보다 넓은 부분은 상자 밖이면 비움
             yy2,xx2=np.mgrid[0:W.shape[0],ww:W.shape[1]]; o2=~((xx2+tw['x']>=x0)&(yy2+tw['y']>=y0)&(yy2+tw['y']<y1)); W[:,ww:][o2]=0
         save(w,W)
+def cut_rest_forearm():
+    """마이크 든 아래팔은 restPose로 팔꿈치에서 내려 그리므로, 몸 그림 속 옛 아래팔·주먹(hand_r 자리)을 지운다.
+    그 뒤는 팔 내린 머리 그림(hair_armdown.jpg)으로 채운 머리가 보인다. 팔꿈치 둘레·얼굴(x>=560)은 남김. 지우기만."""
+    h=SK['hand_r']['hand_r']; H=ndimage.binary_dilation(load('hand_r')[...,3]>0,iterations=4)
+    ex,ey=412,988
+    for n in ('body_upper','body_upper_wave'):
+        t=SK['body_upper'][n]; a=load(n); m=np.zeros(a.shape[:2],bool)
+        ys,xs=np.where(H); ys=ys+h['y']-t['y']; xs=xs+h['x']-t['x']; ok=(ys>=0)&(xs>=0)&(ys<a.shape[0])&(xs<a.shape[1]); m[ys[ok],xs[ok]]=True
+        yy,xx=np.mgrid[0:a.shape[0],0:a.shape[1]]; X=xx+t['x']; Y=yy+t['y']
+        m&=~(np.hypot(X-ex,Y-ey)<80)&(X<560)
+        a[...,3]=np.where(m,0,a[...,3]); save(n,a)
 if __name__=='__main__':
     by={}
     for n,b in ERASE: by.setdefault(n,[]).append(b)
@@ -120,5 +131,6 @@ if __name__=='__main__':
         a=load(n); yy,xx=np.mgrid[0:a.shape[0],0:a.shape[1]]
         bx=(xx+t['x']>=x0-8)&(yy+t['y']>=y0)&(yy+t['y']<y1)   # 흔드는 팔이 비켜 가며 드러나는 머리 부분만
         save(n,fill_slivers(a,box=bx))
+    cut_rest_forearm()
     sync_twins()
     print('touchup ok')

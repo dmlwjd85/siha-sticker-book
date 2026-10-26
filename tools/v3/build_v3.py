@@ -89,8 +89,22 @@ WAVE_ANGLES=[-10,-7.5,-5,-2.5,0,2.5,5,7.5,10]
 GRIP=(259,309); ELBOW_R=(206,494)   # 마이크 쥔 손 가운데, 그 팔 팔꿈치    # 흔드는 팔 팔꿈치(회전축), 이 선 위가 아래팔 조각
 if __name__=='__main__':
     yy,xx=np.mgrid[0:H*S,0:W*S]/S
+    # 마이크 든 팔을 restPose로 내리면 옛 아래팔·주먹 자리가 비므로, 팔을 내린 머리 그림(GenerateImage: hair_armdown.jpg)의 머리로 그 자리만 바꿔 넣는다
+    _ad=None
+    def armdown(rgb,al):
+        nonlocal_ad=globals().setdefault('_ADN',None)
+        if globals()['_ADN'] is None: globals()['_ADN']=load('hair_armdown.jpg')
+        r2,a2=globals()['_ADN']
+        yy0,xx0=np.mgrid[0:H,0:W]
+        def sd(a,b):
+            a=np.array(a,float);b=np.array(b,float);d=b-a;t=np.clip(((xx0-a[0])*d[0]+(yy0-a[1])*d[1])/(d@d),0,1); return np.hypot(xx0-a[0]-t*d[0],yy0-a[1]-t*d[1])
+        m=((sd(GRIP,ELBOW_R)<46)|((xx0>FIST[0]-14)&(xx0<FIST[2]+6)&(yy0>FIST[1]-14)&(yy0<FIST[3]+10)))&(xx0<282)&(yy0<ELBOW_R[1]-40)
+        m=cv2.GaussianBlur(m.astype(np.float32),(0,0),3)
+        return rgb*(1-m[...,None])+r2*m[...,None], al*(1-m)+a2*m
     def lay(name, keep=KEEP, align=True, redraw=True):
-        rgb,al=load(name,align); return hires(rgb,al,keep,redraw), rgb, al
+        rgb,al=load(name,align)
+        if name.startswith('hair'): rgb,al=armdown(rgb,al)
+        return hires(rgb,al,keep,redraw), rgb, al
     body,brgb,bal=lay('body.jpg',align=False); outfit,orgb,oal=lay('outfit.jpg')
     bw,_,_=lay('body_wave.jpg'); ow,owrgb,_=lay('outfit_wave.jpg'); eyes,_,_=lay('eyes_closed.jpg'); hair,hrgb,hal=lay('hair.jpg',redraw=False)
     up=lambda m: cv2.resize(m.astype(np.float32),(W*S,H*S),interpolation=cv2.INTER_LINEAR)
