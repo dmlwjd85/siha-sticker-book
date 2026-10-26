@@ -142,7 +142,7 @@ def reviewer_fixes():
         a,b=SK[slot][base],SK[slot][n]; return a['x']-b['x'],a['y']-b['y']
     for slot,base,fn in (('body_lower','body_lower',lambda a,dx,dy: capsule(a,(645.0+dx,97.5+dy),(645.5+dx,112+dy),2.0,(634+dx,84+dy,658+dx,108+dy))),
                          ('fit_upper','basic_upper',lambda a,dx,dy: waist_line(a,262+dx,352+dx,430.0+dy,430.5+dy,top=414+dy,bot=446+dy)),
-                         ('hair_back','hair_back',lambda a,dx,dy: unsmudge_hair(unsmudge_hair(a,(664+dx,396+dy,692+dx,438+dy),poly=[(670+dx,398+dy),(680+dx,398+dy),(686+dx,420+dy),(684+dx,440+dy),(671+dx,440+dy)]),(756+dx,648+dy,790+dx,714+dy)))):
+                         ('hair_back','hair_back',lambda a,dx,dy: unsmudge_hair(unsmudge_hair(unsmudge_hair(a,(664+dx,396+dy,692+dx,438+dy),poly=[(670+dx,398+dy),(680+dx,398+dy),(686+dx,420+dy),(684+dx,440+dy),(671+dx,440+dy)]),(756+dx,648+dy,790+dx,714+dy)),(724+dx,596+dy,758+dx,642+dy)))):
         for n in (base,base+'_wave'):
             if n not in SK[slot]: continue
             dx,dy=sh(slot,base,n); a=load(n)
@@ -159,6 +159,22 @@ def cut_rest_forearm():
         yy,xx=np.mgrid[0:a.shape[0],0:a.shape[1]]; X=xx+t['x']; Y=yy+t['y']
         m&=~(np.hypot(X-ex,Y-ey)<80)&(X<560)
         a[...,3]=np.where(m,0,a[...,3]); save(n,a)
+def hair_edge_aa(n):
+    """머리 바깥 가장자리 마감(검수3): 떠 있는 조각 제거 → 작은 빈틈 메움 → 흰 테 제거 → 가장자리 알파를 매끈한 곡선으로(안티에일리어싱)
+    → 바깥선이 빠진 곳(가닥 끝)은 원래 외곽선색 LINEC 한 줄(폭 약 4px)로 닫음. 기존 외곽선보다 밝은 곳만 어둡게."""
+    a=load(n).astype(np.float32); al=a[...,3]; A=al>128
+    lb,k=ndimage.label(A); sz=ndimage.sum(A,lb,range(1,k+1)); A=np.isin(lb,1+np.where(sz>=400)[0])
+    hl,k=ndimage.label(ndimage.binary_fill_holes(A)&~A); hs=ndimage.sum(np.ones_like(hl),hl,range(1,k+1)); A|=np.isin(hl,1+np.where(hs<120)[0])
+    A=ndimage.binary_opening(A,iterations=1)|ndimage.binary_erosion(A,iterations=2)
+    g=a[...,:3]; L=g.mean(-1); sat=g.max(-1)-g.min(-1)
+    near=A&~ndimage.binary_erosion(A,iterations=3); A&=~(near&(L>175)&(sat<70))
+    sm=cv2.GaussianBlur(A.astype(np.float32),(0,0),1.1); na=np.clip((sm-0.5)*2.4+0.5,0,1)
+    idx=ndimage.distance_transform_edt(~(A&(al>200)),return_indices=True)[1]
+    g=g[idx[0],idx[1]]
+    d=ndimage.distance_transform_edt(sm>0.5); w=np.clip(4.0-d,0,1)[...,None]*(na[...,None]>0)
+    dark=g.mean(-1,keepdims=True)>LINEC.mean()+15
+    g=np.where(dark,g*(1-w)+LINEC*w,g)
+    out=np.dstack([g,na*255]).clip(0,255).astype(np.uint8); save(n,out)
 if __name__=='__main__':
     by={}
     for n,b in ERASE: by.setdefault(n,[]).append(b)
@@ -175,6 +191,7 @@ if __name__=='__main__':
         bx=(xx+t['x']>=x0-8)&(yy+t['y']>=y0)&(yy+t['y']<y1)   # 흔드는 팔이 비켜 가며 드러나는 머리 부분만
         save(n,fill_slivers(a,box=bx))
     reviewer_fixes()
+    for n in ('hair_back','hair_back_wave'): hair_edge_aa(n)
     cut_rest_forearm()
     sync_twins()
     print('touchup ok')
