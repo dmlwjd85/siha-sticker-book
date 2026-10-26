@@ -105,6 +105,49 @@ def sync_twins():
         if W.shape[1]>ww:  # 쉬는 층보다 넓은 부분은 상자 밖이면 비움
             yy2,xx2=np.mgrid[0:W.shape[0],ww:W.shape[1]]; o2=~((xx2+tw['x']>=x0)&(yy2+tw['y']>=y0)&(yy2+tw['y']<y1)); W[:,ww:][o2]=0
         save(w,W)
+LINEC=np.array([110,61,91],np.float32)
+def capsule(a,p,q,r,box):
+    """상자 안을 둘레 바탕색(중앙값)으로 덮고, p→q 선을 둥근 끝(반지름 r, 안티에일리어싱)으로 다시 긋는다"""
+    x0,y0,x1,y1=box; f=a.astype(np.float32); sub=f[y0:y1,x0:x1]
+    ring=np.r_[f[y0-2:y0,x0:x1].reshape(-1,4),f[y0:y1,x0-2:x0].reshape(-1,4),f[y0:y1,x1:x1+2].reshape(-1,4)]
+    ring=ring[(ring[:,3]>250)&(ring[:,:3].mean(1)>200)]; bg=np.median(ring[:,:3],0)
+    yy,xx=np.mgrid[y0:y1,x0:x1]+0.5; p=np.array(p,float); q=np.array(q,float); d=q-p
+    t=np.clip(((xx-p[0])*d[0]+(yy-p[1])*d[1])/(d@d),0,1); dist=np.hypot(xx-p[0]-t*d[0],yy-p[1]-t*d[1])
+    L=np.clip(r+0.5-dist,0,1)[...,None]
+    sub[...,:3]=bg*(1-L)+LINEC*L; f[y0:y1,x0:x1]=sub; return f.clip(0,255).astype(np.uint8)
+def waist_line(a,x0,x1,yl,yr,hw=2.6,top=414,bot=446):
+    """허리선(상의-치마 경계): x0..x1 에서 yl→yr 로 곧게 한 줄(폭 2*hw, 안티에일리어싱). 위는 그 열의 상의색, 아래는 치마색"""
+    f=a.astype(np.float32)
+    for x in range(x0,x1):
+        yc=yl+(yr-yl)*(x-x0)/(x1-x0); sh=f[top-4:top,x,:3].mean(0); sk=f[bot:bot+4,x,:3].mean(0)
+        for y in range(top,bot):
+            d=abs(y+0.5-yc); L=np.clip(hw+0.5-d,0,1); base=sh if y+0.5<yc else sk
+            f[y,x,:3]=base*(1-L)+LINEC*L; f[y,x,3]=255
+    return f.clip(0,255).astype(np.uint8)
+def unsmudge_hair(a,box,poly=None):
+    """머리 가닥 사이 회색·진갈색 얼룩(채도 낮음, 외곽선 아님)을 둘레 분홍 머리색(정규화 가중 평균)으로 바꾼다. 외곽선(자두색)은 그대로"""
+    import cv2
+    x0,y0,x1,y1=box; f=a.astype(np.float32); s=f[y0:y1,x0:x1]; r,g,b,al=[s[...,i] for i in range(4)]
+    plum=(r-g>35)&(b-g>12)&(s[...,:3].mean(-1)<130)
+    pink=(r-g>40)&(b>g)&(s[...,:3].mean(-1)>165)&(al>250)
+    m=(al>250)&~plum&~pink&((r-g<40)|(s[...,:3].mean(-1)<165))
+    if poly is not None:
+        pm=np.zeros(m.shape,np.uint8); cv2.fillPoly(pm,[np.array(poly,np.int32)-[x0,y0]],1); m&=pm>0
+        edge=(pm>0)&(al>0)&(al<=250)&(r-g<40); s[...,3][edge]=0     # 틈 끝 회색 반투명 테 → 깨끗한 배경
+    w=cv2.GaussianBlur(pink.astype(np.float32),(0,0),3); c=np.stack([cv2.GaussianBlur(s[...,i]*pink,(0,0),3) for i in range(3)],-1)/np.maximum(w,1e-3)[...,None]
+    ok=m&(w>0.02); s[...,:3][ok]=c[ok]; s[...,3][ok]=255; f[y0:y1,x0:x1]=s; return f.clip(0,255).astype(np.uint8)
+def reviewer_fixes():
+    """검수 지적 1·2·5·6행(400% 비교) 손질. 좌표는 쉬는 자세 조각 기준 → 흔들기 짝 조각은 무대 좌표로 옮겨 같은 자리에"""
+    def sh(slot,base,n):
+        a,b=SK[slot][base],SK[slot][n]; return a['x']-b['x'],a['y']-b['y']
+    for slot,base,fn in (('body_lower','body_lower',lambda a,dx,dy: capsule(a,(645.0+dx,97.5+dy),(645.5+dx,112+dy),2.0,(634+dx,84+dy,658+dx,108+dy))),
+                         ('fit_upper','basic_upper',lambda a,dx,dy: waist_line(a,262+dx,352+dx,430.0+dy,430.5+dy,top=414+dy,bot=446+dy)),
+                         ('hair_back','hair_back',lambda a,dx,dy: unsmudge_hair(unsmudge_hair(a,(664+dx,396+dy,692+dx,438+dy),poly=[(670+dx,398+dy),(680+dx,398+dy),(686+dx,420+dy),(684+dx,440+dy),(671+dx,440+dy)]),(756+dx,648+dy,790+dx,714+dy)))):
+        for n in (base,base+'_wave'):
+            if n not in SK[slot]: continue
+            dx,dy=sh(slot,base,n); a=load(n)
+            try: save(n,fn(a,dx,dy))
+            except (ValueError,IndexError): print('건너뜀',n)
 def cut_rest_forearm():
     """마이크 든 아래팔은 restPose로 팔꿈치에서 내려 그리므로, 몸 그림 속 옛 아래팔·주먹(hand_r 자리)을 지운다.
     그 뒤는 팔 내린 머리 그림(hair_armdown.jpg)으로 채운 머리가 보인다. 팔꿈치 둘레·얼굴(x>=560)은 남김. 지우기만."""
@@ -131,6 +174,7 @@ if __name__=='__main__':
         a=load(n); yy,xx=np.mgrid[0:a.shape[0],0:a.shape[1]]
         bx=(xx+t['x']>=x0-8)&(yy+t['y']>=y0)&(yy+t['y']<y1)   # 흔드는 팔이 비켜 가며 드러나는 머리 부분만
         save(n,fill_slivers(a,box=bx))
+    reviewer_fixes()
     cut_rest_forearm()
     sync_twins()
     print('touchup ok')
