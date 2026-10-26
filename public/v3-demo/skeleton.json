@@ -1,2 +1,555 @@
 {
- "restPose": {"forearm_r": {"rotate": -34}},"skeleton": {"spine": "4.2-like", "width": 1440, "height": 2560, "scale": 2, "stagePad": 160, "note": "y 아래로. 원본 720x1280 그림을 2배로 다듬음. 기본 자세 = 한 손 마이크(주먹 안 소품 슬롯 prop_r), 다른 손 아래로 가볍게 쥠"}, "bones": [{"name": "root", "rest": {"x": 720, "y": 1280}}, {"name": "pelvis", "parent": "root", "rest": {"x": 720, "y": 1280}}, {"name": "chest", "parent": "pelvis", "rest": {"x": 720, "y": 1280}}, {"name": "neck", "parent": "chest", "rest": {"x": 720, "y": 660}}, {"name": "head", "parent": "neck", "rest": {"x": 720, "y": 600}}, {"name": "upperarm_r", "parent": "chest", "rest": {"x": 550, "y": 740}}, {"name": "forearm_r", "parent": "upperarm_r", "rest": {"x": 412, "y": 988}}, {"name": "hand_r", "parent": "forearm_r", "rest": {"x": 518, "y": 618}}, {"name": "prop_r", "parent": "hand_r", "rest": {"x": 518, "y": 618}}, {"name": "upperarm_l", "parent": "chest", "rest": {"x": 890, "y": 740}}, {"name": "forearm_l", "parent": "upperarm_l", "rest": {"x": 1056, "y": 880}}, {"name": "hand_l", "parent": "forearm_l", "rest": {"x": 1060, "y": 600}}], "slots": [{"name": "hair_back", "bone": "head", "attachment": "hair_back"}, {"name": "body_lower", "bone": "pelvis", "attachment": "body_lower"}, {"name": "fit_lower", "bone": "pelvis"}, {"name": "body_upper", "bone": "chest", "attachment": "body_upper"}, {"name": "fit_upper", "bone": "chest"}, {"name": "wave_arm", "bone": "chest"}, {"name": "eyes", "bone": "head"}, {"name": "hair_front", "bone": "head", "attachment": "hair_front"}, {"name": "prop", "bone": "prop_r", "attachment": "mic"}, {"name": "hand_r", "bone": "hand_r", "attachment": "hand_r"}], "skins": [{"name": "default", "attachments": {"hair_back": {"hair_back": {"path": "parts/hair_back.png", "x": 303, "y": 102, "width": 814, "height": 1140}, "hair_back_wave": {"path": "parts/hair_back_wave.png", "x": 303, "y": 102, "width": 814, "height": 1140}}, "hair_front": {"hair_front": {"path": "parts/hair_front.png", "x": 483, "y": 118, "width": 467, "height": 482}}, "body_lower": {"body_lower": {"path": "parts/body_lower.png", "x": 462, "y": 1280, "width": 699, "height": 1159}, "body_lower_wave": {"path": "parts/body_lower_wave.png", "x": 462, "y": 1280, "width": 515, "height": 1159}}, "body_upper": {"body_upper": {"path": "parts/body_upper.png", "x": 389, "y": 121, "width": 738, "height": 1171}, "body_upper_wave": {"path": "parts/body_upper_wave.png", "x": 389, "y": 121, "width": 548, "height": 1171}}, "fit_lower": {"basic_lower": {"path": "parts/basic_lower.png", "x": 407, "y": 1280, "width": 622, "height": 1169}, "basic_lower_wave": {"path": "parts/basic_lower_wave.png", "x": 407, "y": 1280, "width": 622, "height": 1169}}, "fit_upper": {"basic_upper": {"path": "parts/basic_upper.png", "x": 478, "y": 678, "width": 533, "height": 614}, "basic_upper_wave": {"path": "parts/basic_upper_wave.png", "x": 478, "y": 678, "width": 478, "height": 614}}, "eyes": {"eyes_closed": {"path": "parts/eyes_closed.png", "x": 527, "y": 347, "width": 396, "height": 190}}, "hand_r": {"hand_r": {"path": "parts/hand_r.png", "x": 389, "y": 549, "width": 186, "height": 465}}, "prop": {"mic": {"path": "parts/prop_mic.png", "grip": 0.8333, "scale": 0.2, "rotation": -8, "width": 679, "height": 1224}}}}], "outfits": {"basic": {"fit_lower": "basic_lower", "fit_upper": "basic_upper", "wave": {"fit_lower": "basic_lower_wave", "fit_upper": "basic_upper_wave"}}}, "props": {"mic": {"slot": "prop", "bone": "prop_r", "note": "손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다"}}, "animations": {"blink": {"period": 4.2, "slots": {"eyes": {"attachment": [{"time": 0, "name": null}, {"time": 3.95, "name": "eyes_closed"}, {"time": 4.1, "name": null}]}}}, "breathe": {"period": 3.2, "bones": {"chest": {"scale": [{"time": 0, "y": 1}, {"time": 1.6, "y": 1.006}, {"time": 3.2, "y": 1}]}}}, "wave": {"period": 1.6, "repeat": 2, "swap": {"hair_back": "hair_back_wave", "body_lower": "body_lower_wave", "body_upper": "body_upper_wave"}, "frames": [{"angle": -10, "body": {"path": "parts/body_wave_arm_0.png", "x": 910, "y": 457, "width": 198, "height": 529}, "basic": {"path": "parts/basic_wave_arm_0.png", "x": 910, "y": 588, "width": 201, "height": 398}}, {"angle": -7.5, "body": {"path": "parts/body_wave_arm_1.png", "x": 910, "y": 455, "width": 198, "height": 531}, "basic": {"path": "parts/basic_wave_arm_1.png", "x": 910, "y": 589, "width": 201, "height": 397}}, {"angle": -5, "body": {"path": "parts/body_wave_arm_2.png", "x": 910, "y": 454, "width": 198, "height": 532}, "basic": {"path": "parts/basic_wave_arm_2.png", "x": 910, "y": 590, "width": 201, "height": 396}}, {"angle": -2.5, "body": {"path": "parts/body_wave_arm_3.png", "x": 910, "y": 455, "width": 215, "height": 531}, "basic": {"path": "parts/basic_wave_arm_3.png", "x": 910, "y": 592, "width": 201, "height": 394}}, {"angle": 0, "body": {"path": "parts/body_wave_arm_4.png", "x": 910, "y": 457, "width": 229, "height": 529}, "basic": {"path": "parts/basic_wave_arm_4.png", "x": 910, "y": 594, "width": 213, "height": 392}}, {"angle": 2.5, "body": {"path": "parts/body_wave_arm_5.png", "x": 910, "y": 457, "width": 245, "height": 529}, "basic": {"path": "parts/basic_wave_arm_5.png", "x": 910, "y": 592, "width": 226, "height": 394}}, {"angle": 5, "body": {"path": "parts/body_wave_arm_6.png", "x": 910, "y": 461, "width": 262, "height": 525}, "basic": {"path": "parts/basic_wave_arm_6.png", "x": 910, "y": 591, "width": 238, "height": 395}}, {"angle": 7.5, "body": {"path": "parts/body_wave_arm_7.png", "x": 910, "y": 463, "width": 277, "height": 523}, "basic": {"path": "parts/basic_wave_arm_7.png", "x": 910, "y": 590, "width": 250, "height": 396}}, {"angle": 10, "body": {"path": "parts/body_wave_arm_8.png", "x": 910, "y": 467, "width": 292, "height": 519}, "basic": {"path": "parts/basic_wave_arm_8.png", "x": 910, "y": 590, "width": 262, "height": 396}}], "angle": [{"time": 0, "value": 0}, {"time": 0.4, "value": 10}, {"time": 0.8, "value": -10}, {"time": 1.2, "value": 10}, {"time": 1.6, "value": 0}], "changeBox": [808, 248, 1440, 1532]}, "mic_bob": {"period": 3.2, "note": "숨쉬기와 같이 주먹·마이크가 가슴 뼈를 따라 살짝 오르내림(따로 키 없음)"}}, "accessories": [{"name": "acc_ribbon", "path": "parts/acc_ribbon.png", "width": 807, "height": 679}, {"name": "acc_star", "path": "parts/acc_star.png", "width": 615, "height": 614}]}
+  "skeleton": {
+    "spine": "4.2-like",
+    "width": 1440,
+    "height": 2560,
+    "scale": 2,
+    "stagePad": 160,
+    "note": "y 아래로. 원본 720x1280 그림을 2배로 다듬음. 기본 자세 = 한 손 마이크(주먹 안 소품 슬롯 prop_r), 다른 손 아래로 가볍게 쥠"
+  },
+  "bones": [
+    {
+      "name": "root",
+      "rest": {
+        "x": 720,
+        "y": 1280
+      }
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "rest": {
+        "x": 720,
+        "y": 1280
+      }
+    },
+    {
+      "name": "chest",
+      "parent": "pelvis",
+      "rest": {
+        "x": 720,
+        "y": 1280
+      }
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "rest": {
+        "x": 720,
+        "y": 660
+      }
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "rest": {
+        "x": 720,
+        "y": 600
+      }
+    },
+    {
+      "name": "upperarm_r",
+      "parent": "chest",
+      "rest": {
+        "x": 550,
+        "y": 740
+      }
+    },
+    {
+      "name": "forearm_r",
+      "parent": "upperarm_r",
+      "rest": {
+        "x": 412,
+        "y": 988
+      }
+    },
+    {
+      "name": "hand_r",
+      "parent": "forearm_r",
+      "rest": {
+        "x": 518,
+        "y": 618
+      }
+    },
+    {
+      "name": "prop_r",
+      "parent": "hand_r",
+      "rest": {
+        "x": 518,
+        "y": 618
+      }
+    },
+    {
+      "name": "upperarm_l",
+      "parent": "chest",
+      "rest": {
+        "x": 890,
+        "y": 740
+      }
+    },
+    {
+      "name": "forearm_l",
+      "parent": "upperarm_l",
+      "rest": {
+        "x": 1056,
+        "y": 880
+      }
+    },
+    {
+      "name": "hand_l",
+      "parent": "forearm_l",
+      "rest": {
+        "x": 1060,
+        "y": 600
+      }
+    }
+  ],
+  "slots": [
+    {
+      "name": "hair_back",
+      "bone": "head",
+      "attachment": "hair_back"
+    },
+    {
+      "name": "body_lower",
+      "bone": "pelvis",
+      "attachment": "body_lower"
+    },
+    {
+      "name": "fit_lower",
+      "bone": "pelvis"
+    },
+    {
+      "name": "body_upper",
+      "bone": "chest",
+      "attachment": "body_upper"
+    },
+    {
+      "name": "fit_upper",
+      "bone": "chest"
+    },
+    {
+      "name": "wave_arm",
+      "bone": "chest"
+    },
+    {
+      "name": "eyes",
+      "bone": "head"
+    },
+    {
+      "name": "hair_front",
+      "bone": "head",
+      "attachment": "hair_front"
+    },
+    {
+      "name": "prop",
+      "bone": "prop_r",
+      "attachment": "mic"
+    },
+    {
+      "name": "hand_r",
+      "bone": "hand_r",
+      "attachment": "hand_r"
+    }
+  ],
+  "skins": [
+    {
+      "name": "default",
+      "attachments": {
+        "hair_back": {
+          "hair_back": {
+            "path": "parts/hair_back.png",
+            "x": 303,
+            "y": 102,
+            "width": 814,
+            "height": 1140
+          },
+          "hair_back_wave": {
+            "path": "parts/hair_back_wave.png",
+            "x": 303,
+            "y": 102,
+            "width": 814,
+            "height": 1140
+          }
+        },
+        "hair_front": {
+          "hair_front": {
+            "path": "parts/hair_front.png",
+            "x": 483,
+            "y": 118,
+            "width": 467,
+            "height": 482
+          }
+        },
+        "body_lower": {
+          "body_lower": {
+            "path": "parts/body_lower.png",
+            "x": 462,
+            "y": 1280,
+            "width": 699,
+            "height": 1159
+          },
+          "body_lower_wave": {
+            "path": "parts/body_lower_wave.png",
+            "x": 462,
+            "y": 1280,
+            "width": 515,
+            "height": 1159
+          }
+        },
+        "body_upper": {
+          "body_upper": {
+            "path": "parts/body_upper.png",
+            "x": 389,
+            "y": 121,
+            "width": 738,
+            "height": 1171
+          },
+          "body_upper_wave": {
+            "path": "parts/body_upper_wave.png",
+            "x": 389,
+            "y": 121,
+            "width": 548,
+            "height": 1171
+          }
+        },
+        "fit_lower": {
+          "basic_lower": {
+            "path": "parts/basic_lower.png",
+            "x": 407,
+            "y": 1280,
+            "width": 622,
+            "height": 1169
+          },
+          "basic_lower_wave": {
+            "path": "parts/basic_lower_wave.png",
+            "x": 407,
+            "y": 1280,
+            "width": 622,
+            "height": 1169
+          }
+        },
+        "fit_upper": {
+          "basic_upper": {
+            "path": "parts/basic_upper.png",
+            "x": 478,
+            "y": 678,
+            "width": 533,
+            "height": 614
+          },
+          "basic_upper_wave": {
+            "path": "parts/basic_upper_wave.png",
+            "x": 478,
+            "y": 678,
+            "width": 478,
+            "height": 614
+          }
+        },
+        "eyes": {
+          "eyes_closed": {
+            "path": "parts/eyes_closed.png",
+            "x": 527,
+            "y": 347,
+            "width": 396,
+            "height": 190
+          }
+        },
+        "hand_r": {
+          "hand_r": {
+            "path": "parts/hand_r.png",
+            "x": 389,
+            "y": 549,
+            "width": 186,
+            "height": 465
+          }
+        },
+        "prop": {
+          "mic": {
+            "path": "parts/prop_mic.png",
+            "grip": 0.8333,
+            "scale": 0.2,
+            "rotation": -8,
+            "width": 679,
+            "height": 1224
+          }
+        }
+      }
+    }
+  ],
+  "outfits": {
+    "basic": {
+      "fit_lower": "basic_lower",
+      "fit_upper": "basic_upper",
+      "wave": {
+        "fit_lower": "basic_lower_wave",
+        "fit_upper": "basic_upper_wave"
+      }
+    }
+  },
+  "props": {
+    "mic": {
+      "slot": "prop",
+      "bone": "prop_r",
+      "note": "손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다"
+    }
+  },
+  "restPose": {
+    "forearm_r": {
+      "rotate": -34
+    }
+  },
+  "animations": {
+    "blink": {
+      "period": 4.2,
+      "slots": {
+        "eyes": {
+          "attachment": [
+            {
+              "time": 0,
+              "name": null
+            },
+            {
+              "time": 3.95,
+              "name": "eyes_closed"
+            },
+            {
+              "time": 4.1,
+              "name": null
+            }
+          ]
+        }
+      }
+    },
+    "breathe": {
+      "period": 3.2,
+      "bones": {
+        "chest": {
+          "scale": [
+            {
+              "time": 0,
+              "y": 1
+            },
+            {
+              "time": 1.6,
+              "y": 1.006
+            },
+            {
+              "time": 3.2,
+              "y": 1
+            }
+          ]
+        }
+      }
+    },
+    "wave": {
+      "period": 1.6,
+      "repeat": 2,
+      "swap": {
+        "hair_back": "hair_back_wave",
+        "body_lower": "body_lower_wave",
+        "body_upper": "body_upper_wave"
+      },
+      "frames": [
+        {
+          "angle": -10,
+          "body": {
+            "path": "parts/body_wave_arm_0.png",
+            "x": 910,
+            "y": 457,
+            "width": 198,
+            "height": 529
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_0.png",
+            "x": 910,
+            "y": 588,
+            "width": 201,
+            "height": 398
+          }
+        },
+        {
+          "angle": -7.5,
+          "body": {
+            "path": "parts/body_wave_arm_1.png",
+            "x": 910,
+            "y": 455,
+            "width": 198,
+            "height": 531
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_1.png",
+            "x": 910,
+            "y": 589,
+            "width": 201,
+            "height": 397
+          }
+        },
+        {
+          "angle": -5,
+          "body": {
+            "path": "parts/body_wave_arm_2.png",
+            "x": 910,
+            "y": 454,
+            "width": 198,
+            "height": 532
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_2.png",
+            "x": 910,
+            "y": 590,
+            "width": 201,
+            "height": 396
+          }
+        },
+        {
+          "angle": -2.5,
+          "body": {
+            "path": "parts/body_wave_arm_3.png",
+            "x": 910,
+            "y": 455,
+            "width": 215,
+            "height": 531
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_3.png",
+            "x": 910,
+            "y": 592,
+            "width": 201,
+            "height": 394
+          }
+        },
+        {
+          "angle": 0,
+          "body": {
+            "path": "parts/body_wave_arm_4.png",
+            "x": 910,
+            "y": 457,
+            "width": 229,
+            "height": 529
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_4.png",
+            "x": 910,
+            "y": 594,
+            "width": 213,
+            "height": 392
+          }
+        },
+        {
+          "angle": 2.5,
+          "body": {
+            "path": "parts/body_wave_arm_5.png",
+            "x": 910,
+            "y": 457,
+            "width": 245,
+            "height": 529
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_5.png",
+            "x": 910,
+            "y": 592,
+            "width": 226,
+            "height": 394
+          }
+        },
+        {
+          "angle": 5,
+          "body": {
+            "path": "parts/body_wave_arm_6.png",
+            "x": 910,
+            "y": 461,
+            "width": 262,
+            "height": 525
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_6.png",
+            "x": 910,
+            "y": 591,
+            "width": 238,
+            "height": 395
+          }
+        },
+        {
+          "angle": 7.5,
+          "body": {
+            "path": "parts/body_wave_arm_7.png",
+            "x": 910,
+            "y": 463,
+            "width": 277,
+            "height": 523
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_7.png",
+            "x": 910,
+            "y": 590,
+            "width": 250,
+            "height": 396
+          }
+        },
+        {
+          "angle": 10,
+          "body": {
+            "path": "parts/body_wave_arm_8.png",
+            "x": 910,
+            "y": 467,
+            "width": 292,
+            "height": 519
+          },
+          "basic": {
+            "path": "parts/basic_wave_arm_8.png",
+            "x": 910,
+            "y": 590,
+            "width": 262,
+            "height": 396
+          }
+        }
+      ],
+      "angle": [
+        {
+          "time": 0,
+          "value": 0
+        },
+        {
+          "time": 0.4,
+          "value": 10
+        },
+        {
+          "time": 0.8,
+          "value": -10
+        },
+        {
+          "time": 1.2,
+          "value": 10
+        },
+        {
+          "time": 1.6,
+          "value": 0
+        }
+      ],
+      "changeBox": [
+        808,
+        248,
+        1440,
+        1532
+      ]
+    },
+    "mic_bob": {
+      "period": 3.2,
+      "note": "숨쉬기와 같이 주먹·마이크가 가슴 뼈를 따라 살짝 오르내림(따로 키 없음)"
+    }
+  },
+  "accessories": [
+    {
+      "name": "acc_ribbon",
+      "path": "parts/acc_ribbon.png",
+      "width": 807,
+      "height": 679
+    },
+    {
+      "name": "acc_star",
+      "path": "parts/acc_star.png",
+      "width": 615,
+      "height": 614
+    }
+  ]
+}
