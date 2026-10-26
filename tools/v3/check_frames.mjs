@@ -1,5 +1,5 @@
 // 모든 동작의 모든 프레임 캡처(손 흔들기·깜빡임·숨쉬기 × 옷 입음/안 입음). 분석은 check_frames.py 가 한다.
-// 사용: (vite preview 를 띄운 뒤) NODE_PATH=<playwright 있는 node_modules> node tools/v3/check_frames.mjs <URL> <출력폴더>
+// 사용: 저장소에서 npm i --no-save playwright 한 번, vite preview 를 띄운 뒤 node tools/v3/check_frames.mjs <URL> <출력폴더>
 import { chromium } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 const url = process.argv[2] || 'http://localhost:4179/siha-sticker-book/v3-demo/'

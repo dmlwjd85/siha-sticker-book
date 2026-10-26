@@ -11,6 +11,8 @@ export function samplePose(skel, now, { waveStart = null } = {}) {
   const A = skel.animations, pose = {}
   const br = A.breathe, tb = now % br.period
   pose.chest = { sy: lerpKeys(br.bones.chest.scale, tb, 'y') }
+  // 기본 자세 보정(skeleton.json restPose): 마이크 든 아래팔을 팔꿈치에서 내려 두 눈이 다 보이게
+  for (const [b, v] of Object.entries(skel.restPose || {})) pose[b] = { ...(pose[b] || {}), ...v }
   let waving = false, waveAngle = 0
   if (waveStart != null) {
     const tw = now - waveStart, w = A.wave

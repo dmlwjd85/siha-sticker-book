@@ -1,5 +1,5 @@
 """parts.json → skeleton.json (Spine 비슷한 뼈·슬롯·스킨·옷·움직임). 좌표는 2배 캔버스(1440x2560), y 아래로."""
-import json, sys, os
+import os, json, sys
 from build_v3 import CUT, GRIP, ELBOW_R, WAVE_PIVOT, WAVE_ANGLES, S
 OUT=sys.argv[1] if len(sys.argv)>1 else 'out'
 P=json.load(open(f'{OUT}/parts.json'))
@@ -26,6 +26,7 @@ sk={'skeleton':{'spine':'4.2-like','width':1440,'height':2560,'scale':S,'stagePa
  }}],
  'outfits':{'basic':{'fit_lower':'basic_lower','fit_upper':'basic_upper','wave':{'fit_lower':'basic_lower_wave','fit_upper':'basic_upper_wave'}}},
  'props':{'mic':{'slot':'prop','bone':'prop_r','note':'손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다'}},
+ 'restPose':{'forearm_r':{'rotate':-34}},   # 마이크 든 아래팔을 팔꿈치에서 내림(마이크 머리가 턱 높이, 두 눈 다 보임). 옛 팔 자리 머리는 hair_armdown.jpg
  'animations':{
    'blink':{'period':4.2,'slots':{'eyes':{'attachment':[{'time':0,'name':None},{'time':3.95,'name':'eyes_closed'},{'time':4.1,'name':None}]}}},
    'breathe':{'period':3.2,'bones':{'chest':{'scale':[{'time':0,'y':1},{'time':1.6,'y':1.006},{'time':3.2,'y':1}]}}},
@@ -41,4 +42,7 @@ m=Image.open(f'{OUT}/parts/prop_mic.png'); fh=json.load(open(f'{OUT}/mic_meta.js
 sk['skins'][0]['attachments']['prop']['mic'].update(width=m.width,height=m.height,grip=round(0.5*fh/m.height,4))   # grip = 잘린 그림 높이 기준 손잡이 가운데
 wm=json.load(open(f'{OUT}/wave_meta.json'))['wave_change_box']; from build_v3 import WAVE_BOX
 sk['animations']['wave']['changeBox']=[min(wm[0],WAVE_BOX[0])*S,min(wm[1],WAVE_BOX[1])*S,max(wm[2],WAVE_BOX[2])*S,max(wm[3],WAVE_BOX[3])*S]   # 흔들기 때 바뀌어도 되는 곳(검사용)
-json.dump(sk,open(f'{OUT}/skeleton.json','w'),ensure_ascii=False,indent=1); print('skeleton ok')
+PUB=os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../public/v3-demo/skeleton.json')
+for dst in (f'{OUT}/skeleton.json',PUB):   # 들여쓰기 2칸 유지(한 줄로 저장하지 않음), 끝 줄바꿈
+    with open(dst,'w',encoding='utf-8') as fo: json.dump(sk,fo,ensure_ascii=False,indent=2); fo.write('\n')
+print('skeleton ok')
