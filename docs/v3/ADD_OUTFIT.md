@@ -1,8 +1,9 @@
 # 옷 한 벌 더하기
 
 1. `PROMPTS.md`의 틀로 `outfit.jpg`(쉬는 자세)와 `outfit_wave.jpg`(손 흔드는 자세) **두 장**을 만든다. 둘 다 없으면 흔들 때 소매가 몸에 남는다.
-2. `tools/v3/raw/`에 `{이름}.jpg`, `{이름}_wave.jpg`로 넣고 `python3 tools/v3/build_v3.py && python3 tools/v3/make_skeleton.py` 실행. 결과는 `public/v3-demo/parts`, `skeleton.json`.
-3. 확인: `npx vite preview --port 4179` 켠 뒤 `node tools/v3/check_frames.mjs` → `python3 tools/v3/check_frames.py /tmp/frames`. `"pass": true`여야 한다.
+2. `tools/v3/raw/`에 `{이름}.jpg`, `{이름}_wave.jpg`로 넣고 `python3 tools/v3/build_v3.py && python3 tools/v3/make_skeleton.py` 실행한 뒤 `python3 tools/v3/props_v3.py && python3 tools/v3/touchup.py`, 그다음 `tools/v3/out/parts/*.png`를 `public/v3-demo/parts/`로 복사한다. 결과는 `public/v3-demo/parts`, `skeleton.json`.
+   - `touchup.py`는 그림을 새로 그리지 않는다. 지우기(주변색 채움)·투명화·같은 그림 복사만 한다: 손바닥 주름·허리 위 선 지우기, 엄지 삐침 정리, 머리 결 사이 밝은 줄 누그러뜨리기, 머리 고리 안 흰 테 지우기, **흔들기 층(`*_wave`)의 상자(`changeBox`) 밖을 쉬는 층과 똑같이 맞추기**. 새 옷의 지울 곳은 `ERASE`/`POLY`에 상자 좌표로 더한다.
+3. 확인: `npx vite preview --port 4179` 켠 뒤 `NODE_PATH=<playwright 있는 node_modules> node tools/v3/check_frames.mjs http://localhost:4179/siha-sticker-book/v3-demo/ /tmp/frames` → `python3 tools/v3/check_frames.py /tmp/frames`. `"pass": true`여야 한다.
 
 ## 조각을 뼈에 붙이는 규칙
 - **윗옷은 `fit_upper`(가슴 뼈), 아래옷·양말·신발은 `fit_lower`(허리 아래)**. 자르는 줄은 720 기준 y=640, 위·아래가 6px 겹친다(숨쉬기 때 틈 방지).

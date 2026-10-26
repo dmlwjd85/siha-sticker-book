@@ -23,7 +23,7 @@ def erase(a,box):
     m=cv2.dilate(m,np.ones((3,3),np.uint8))
     a[...,:3]=cv2.inpaint(np.ascontiguousarray(a[...,:3]),m,4,cv2.INPAINT_TELEA); return a
 # (조각, 다각형): 다각형 안을 모두 주변 색으로 메움(바깥선은 다각형 밖에 둠)
-POLY=[('hand_r',[(131,93),(145,93),(145,103),(131,103)]),('hand_r',[(131,110),(139,110),(139,117),(131,117)]),('hand_r',[(131,117),(139,117),(134,133),(131,133)])]   # 엄지 아래 가로 막대·분홍 틈 → 엄지 주름 한 줄만 남김
+POLY=[('hand_r',[(135,91),(146,91),(146,107),(135,107)]),('hand_r',[(131,97),(134,97),(134,125),(131,125)]),('hand_r',[(131,115),(139,115),(139,117),(131,117)]),('body_lower',[(626,74),(639,74),(639,90),(626,90)]),('hand_r',[(131,93),(145,93),(145,103),(131,103)]),('hand_r',[(131,110),(139,110),(139,117),(131,117)]),('hand_r',[(131,117),(139,117),(134,133),(131,133)])]   # 엄지 아래 가로 막대·분홍 틈 → 엄지 주름 한 줄만 남김
 def erase_poly(a,pts):
     m=np.zeros(a.shape[:2],np.uint8); cv2.fillPoly(m,[np.array(pts,np.int32)],1)
     g=a[...,:3].astype(int); L=g.mean(-1); A=a[...,3]>200
@@ -90,8 +90,7 @@ def clear_pocket_rims(a,n=None):
     cand=ring&(((L>185)&(sat<70))|((L>135)&(sat<35)))
     lb,_=ndimage.label(cand|h); ok=np.unique(lb[h]); white=np.isin(lb,ok[ok>0])&cand
     a[...,3]=np.where(white,0,a[...,3])
-    grey=ring&~white&(sat<40)&(L>70)&(a[...,3]>0)
-    a[...,:3][grey]=(110,61,91); return a
+    return a
 BOX=json.load(open(f'{HERE}/../../public/v3-demo/skeleton.json'))['animations']['wave']['changeBox']
 TWINS=[('hair_back','hair_back','hair_back_wave'),('body_lower','body_lower','body_lower_wave'),('body_upper','body_upper','body_upper_wave'),('fit_lower','basic_lower','basic_lower_wave'),('fit_upper','basic_upper','basic_upper_wave')]
 def sync_twins():
