@@ -20,3 +20,9 @@
 ## 과거에 놓친 것
 - 2026-10: 마이크 팔을 restPose로 내린 뒤 위팔 바깥선이 점선·직선 자국으로 남음 → `tools/v3/fix_elbow.py`
 - 2026-10: 720×1280 원화를 2배로 늘려 전체가 흐림 → `tools/v3/upscale_parts.py`(Real-ESRGAN anime_6B, 부품 2배 해상도)
+
+## Round 2 additions
+- 옷 소매 끝의 작은 닫힌 고리 조각(노란 쐐기) — 옷 입힌 상태 팔꿈치 400% 확인 (tools/v3/fix_fit.py)
+- 머리 고리 속 흰 구멍(어깨) — 단색 셀 채색으로 메우기, 흐린 인페인트 금지 (tools/v3/fill_hair_holes.py)
+- 변형 프레임(흔들기 팔) 가장자리의 회색·울퉁불퉁 선 — 모든 프레임 확인 (tools/v3/fix_wave_arm.py)
+- 재생성 패치(B)는 라플라시안 선명도로 비교해 더 선명할 때만 적용
