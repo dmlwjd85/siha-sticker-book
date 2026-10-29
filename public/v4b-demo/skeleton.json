@@ -5,7 +5,7 @@
   "scale": 2,
   "stagePad": 160,
   "jointOverlap": 24,
-  "note": "v5 B안: GenerateImage 전체 재생성 기준 그림(v5/base_gen.jpg) + 머리카락 없는 몸·머리카락 별도 생성→rembg(isnet-anime), 720x1280 한 장을 부위로 나눔(관절 12px→24px 겹침), anime_6B 4배 후 2배로 줄임. 후보정 없음"
+  "note": "v5 B안: GenerateImage로 다시 만든 기준 그림(base_gen.jpg)에서 몸(초록 배경)·머리카락(어두운 배경)을 따로 생성 → 불투명 원본을 통째로 anime_6B 4배(2880x5120) → 링잉 억제(원본 Lanczos 범위로 제한, 피부 외곽선 안쪽 밝은 테를 안쪽 피부색으로 제한) → 4배 크기에서 색 키 알파(몸: 초록 키+역번짐 제거, 머리: 배경 거리 키+색 분리, 안쪽 불투명) → 한 장을 부위로 나눔(관절 4배 48px = 데모 24px 겹침) → RGB·알파 따로 BOX로 1440x2560 축소. 부위별 덧칠 없음"
  },
  "bones": [
   {
@@ -72,7 +72,7 @@
    "x": 790,
    "y": 300,
    "width": 182,
-   "height": 392
+   "height": 390
   },
   {
    "name": "leg_L",
@@ -97,9 +97,9 @@
    "bone": "arm_L",
    "path": "parts/arm_L.png",
    "x": 257,
-   "y": 711,
+   "y": 712,
    "width": 337,
-   "height": 474
+   "height": 473
   },
   {
    "name": "arm_R",
@@ -123,9 +123,9 @@
    "name": "hand_R",
    "bone": "hand_R",
    "path": "parts/hand_R.png",
-   "x": 1092,
+   "x": 1094,
    "y": 1126,
-   "width": 194,
+   "width": 192,
    "height": 182
   },
   {
@@ -134,7 +134,7 @@
    "path": "parts/torso.png",
    "x": 525,
    "y": 666,
-   "width": 384,
+   "width": 383,
    "height": 738
   },
   {
@@ -150,10 +150,10 @@
    "name": "hair_front",
    "bone": "head",
    "path": "parts/hair_front.png",
-   "x": 509,
-   "y": 107,
-   "width": 397,
-   "height": 557
+   "x": 511,
+   "y": 109,
+   "width": 392,
+   "height": 553
   }
  ],
  "animations": {
