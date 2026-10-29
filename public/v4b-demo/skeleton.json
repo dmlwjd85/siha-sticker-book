@@ -5,7 +5,7 @@
   "scale": 2,
   "stagePad": 160,
   "jointOverlap": 24,
-  "note": "v4 B안: 720x1280 생성 몸을 부위로 나눔(관절 12px→2배 24px 겹침), anime_6B 4배 후 2배로 줄임 / 2·3차: 머리끝 안개·회색점·목 페더·손목 띠·주먹 그늘·손목 띠 완전 제거·바깥 반투명 자국 정리"
+  "note": "v5 B안: GenerateImage 전체 재생성 기준 그림(v5/base_gen.jpg) + 머리카락 없는 몸·머리카락 별도 생성→rembg(isnet-anime), 720x1280 한 장을 부위로 나눔(관절 12px→24px 겹침), anime_6B 4배 후 2배로 줄임. 후보정 없음"
  },
  "bones": [
   {
@@ -35,32 +35,32 @@
    "name": "arm_L",
    "parent": "chest",
    "rest": {
-    "x": 580,
-    "y": 735
+    "x": 575,
+    "y": 740
    }
   },
   {
    "name": "arm_R",
    "parent": "chest",
    "rest": {
-    "x": 860,
-    "y": 735
+    "x": 865,
+    "y": 740
    }
   },
   {
    "name": "hand_L",
    "parent": "arm_L",
    "rest": {
-    "x": 236,
-    "y": 1190
+    "x": 280,
+    "y": 1172
    }
   },
   {
    "name": "hand_R",
    "parent": "arm_R",
    "rest": {
-    "x": 1200,
-    "y": 1190
+    "x": 1160,
+    "y": 1162
    }
   }
  ],
@@ -69,91 +69,91 @@
    "name": "hair_back",
    "bone": "head",
    "path": "parts/hair_back.png",
-   "x": 791,
-   "y": 301,
-   "width": 184,
-   "height": 386
+   "x": 790,
+   "y": 300,
+   "width": 182,
+   "height": 392
   },
   {
    "name": "leg_L",
    "bone": "root",
    "path": "parts/leg_L.png",
-   "x": 377,
-   "y": 1355,
-   "width": 323,
-   "height": 1122
+   "x": 378,
+   "y": 1356,
+   "width": 340,
+   "height": 1138
   },
   {
    "name": "leg_R",
    "bone": "root",
    "path": "parts/leg_R.png",
-   "x": 735,
-   "y": 1355,
-   "width": 321,
-   "height": 1121
+   "x": 718,
+   "y": 1356,
+   "width": 337,
+   "height": 1137
   },
   {
    "name": "arm_L",
    "bone": "arm_L",
    "path": "parts/arm_L.png",
-   "x": 243,
-   "y": 715,
-   "width": 352,
-   "height": 462
+   "x": 257,
+   "y": 711,
+   "width": 337,
+   "height": 474
   },
   {
    "name": "arm_R",
    "bone": "arm_R",
    "path": "parts/arm_R.png",
-   "x": 847,
-   "y": 713,
-   "width": 364,
-   "height": 464
+   "x": 846,
+   "y": 710,
+   "width": 352,
+   "height": 465
   },
   {
    "name": "hand_L",
    "bone": "hand_L",
    "path": "parts/hand_L.png",
-   "x": 164,
-   "y": 1127,
+   "x": 166,
+   "y": 1126,
    "width": 188,
-   "height": 178
+   "height": 184
   },
   {
    "name": "hand_R",
    "bone": "hand_R",
    "path": "parts/hand_R.png",
-   "x": 1103,
-   "y": 1127,
-   "width": 185,
-   "height": 177
+   "x": 1092,
+   "y": 1126,
+   "width": 194,
+   "height": 182
   },
   {
    "name": "torso",
    "bone": "root",
    "path": "parts/torso.png",
-   "x": 524,
-   "y": 665,
-   "width": 386,
-   "height": 740
+   "x": 525,
+   "y": 666,
+   "width": 384,
+   "height": 738
   },
   {
    "name": "head",
    "bone": "head",
    "path": "parts/head.png",
-   "x": 550,
-   "y": 255,
-   "width": 332,
-   "height": 459
+   "x": 554,
+   "y": 257,
+   "width": 323,
+   "height": 457
   },
   {
    "name": "hair_front",
    "bone": "head",
    "path": "parts/hair_front.png",
-   "x": 511,
-   "y": 108,
-   "width": 395,
-   "height": 553
+   "x": 509,
+   "y": 107,
+   "width": 397,
+   "height": 557
   }
  ],
  "animations": {
