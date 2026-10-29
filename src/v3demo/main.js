@@ -20,7 +20,7 @@ const SW = skel.skeleton.width + PAD * 2, SH = skel.skeleton.height // 무대 �
 let K = 1
 function fitCanvas() {
   const b = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1
-  const w = Math.min(SW, Math.round(b.width * dpr)) || SW
+  const w = Math.min(SW * 2, Math.round(b.width * dpr)) || SW   // 부품 그림은 무대 좌표의 2배 해상도
   K = w / SW; cv.width = w; cv.height = Math.round(SH * K)
 }
 fitCanvas(); addEventListener('resize', fitCanvas)
