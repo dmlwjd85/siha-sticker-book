@@ -64,3 +64,14 @@
 - [x] 머리카락 속 회색 스케치 선(body_upper 얼굴/귀 선이 앞머리 가장자리로 비침) 제거
 - [x] 묶음 고리 외곽선 두께를 몸 외곽선 굵기로 맞춤, 알파 바늘구멍 메움
 - 파이프라인: hbw_r6 복원 → fix_wave_hair_detail → fix_side_hair → fix_sleeve_wave → sync_wave_parts(마지막)
+
+## Round 9 (v3-review12) — 남은 약점 4개 + 전체 라인 매끈화
+- [x] wave 030 중앙 가는 가닥: 직선 지우고 주변 머리결 따라 휘는 베지어로 다시 그림 (`fix_r9.py`)
+- [x] none 겨드랑이: 빨간 사선·머리 속 어두운 자국(구멍 포함) 제거, 경계 톤 부드럽게 (`fix_r9_armpit.py`, hair_back_wave만)
+- [x] 오른쪽 리본 고리 그라데이션 끝 톤 경계 매끈화 + 매듭 끝 뭉툭함 정리 (`fix_r9_loops.py`)
+- [x] 모든 파츠 라인 매끈화 (`smooth_lines.py`: 4배 초해상 SDF로 알파 외곽 + 잉크선 가장자리; 눈·얼굴 박스와 hair_front 톤 그라데이션 가닥은 보호)
+- [x] hair_front 오른쪽 가닥 톤 끊김(이전 라운드 잔재) → HEAD 그라데이션 복원 (`fix_strand_blend.py`)
+- [x] 파츠별 400% 전/후 시트: `docs/v3/qa/v3-review12/parts/*_400.png` (35장) 눈으로 확인
+- [x] wave400 8장, 옆머리 비교, w390 전신(basic/none) 눈으로 확인
+- [x] 640프레임 check_frames pass=True, vitest 통과 후에만 푸시
+- 남은 약점: body_wave_arm_* 손가락 안쪽 선 가장자리 미세 요철, none 겨드랑이 아래 흐린 그림자 덩어리(빨간 선 제거 흔적)
