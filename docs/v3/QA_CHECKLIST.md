@@ -49,3 +49,9 @@
 ## Round 6 — 흔들기 머리 자국
 - fix_wave_hair_streak(hair_back_wave): 팔이 비켜 간 자리의 옛 몸통 테두리 선이 옅은 흰·회색 줄로 남던 것을 주변 머리색으로 채움. sync_wave_parts 앞에 실행.
 - 검수: 모든 흔들기 프레임(194장) 겨드랑이~머리 끝 영역 400% 시트(docs/v3/qa/v3-review9/sheet_*), 위=전, 아래=후.
+
+## Round 7 (v3-review10)
+- [x] 겨드랑이-머리 외곽선 흰 틈 메움 (fix_wave_hair_detail.py)
+- [x] 평평한 채움에 머리결 3가닥 이어 그림
+- [x] 외곽선 옆 점선(이중선) 제거, 남은 흰 획·회색 점 제거
+- [x] 시트 20장 전/후 직접 육안 확인, 640프레임 check_frames 통과
