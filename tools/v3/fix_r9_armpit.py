@@ -39,5 +39,16 @@ for name in ['hair_back_wave']:
     bl = cv2.GaussianBlur(out * k[..., None], (0, 0), 4) / np.maximum(cv2.GaussianBlur(k, (0, 0), 4), 1e-3)[..., None]
     out = out * (1 - seam[..., None]) + bl * seam[..., None]
     A[..., :3] = np.where(op[..., None], out, A[..., :3])
+    # Round 10: the soft dark-pink blot left where the seam was -> rebuild from surrounding hair tone
+    s2 = A[..., :3].sum(2); op2 = A[..., 3] > 250
+    yy, xx = np.mgrid[0:H, 0:W]
+    r = np.hypot((xx - 1216) / 20.0, (yy - 1526) / 26.0)
+    inner = r < 1.0
+    src = (op2 & ~inner & (s2 > 450) & (r < 2.6)).astype(np.float32)
+    Cc = A[..., :3]
+    num = cv2.GaussianBlur(Cc * src[..., None], (0, 0), 10); den = cv2.GaussianBlur(src, (0, 0), 10)
+    fill = num / np.maximum(den, 1e-3)[..., None]
+    wgt = (np.clip((1.25 - r) / 0.5, 0, 1) * op2 * (s2 > 450))[..., None]
+    A[..., :3] = Cc * (1 - wgt) + fill * wgt
     Image.fromarray(np.clip(A + .5, 0, 255).astype(np.uint8)).save(f)
     print(name, 'armpit fixed px', int(m.sum()))

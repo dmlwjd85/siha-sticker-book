@@ -75,3 +75,8 @@
 - [x] wave400 8장, 옆머리 비교, w390 전신(basic/none) 눈으로 확인
 - [x] 640프레임 check_frames pass=True, vitest 통과 후에만 푸시
 - 남은 약점: body_wave_arm_* 손가락 안쪽 선 가장자리 미세 요철, none 겨드랑이 아래 흐린 그림자 덩어리(빨간 선 제거 흔적)
+
+## Round 10
+- [x] body_wave_arm_* 손가락 안쪽 선: 요철·연분홍 테두리 제거 (fix_finger_edges.py, SDF 4x 슈퍼샘플)
+- [x] none 겨드랑이 아래 흐린 분홍 그림자 → 주변 머리 톤으로 보정 (fix_r9_armpit.py)
+- 증거: docs/v3/qa/v3-review13/
