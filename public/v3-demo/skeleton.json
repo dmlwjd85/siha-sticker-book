@@ -257,10 +257,10 @@
         "hand_r": {
           "hand_r": {
             "path": "parts/hand_r.png",
-            "x": 383,
+            "x": 389,
             "y": 549,
-            "width": 192,
-            "height": 487
+            "width": 186,
+            "height": 465
           }
         },
         "prop": {
@@ -293,11 +293,7 @@
       "note": "손잡이 가운데(grip)를 주먹 가운데에 둔다. 주먹·아래팔 조각(hand_r)이 그 위에 그려져 손잡이를 가린다"
     }
   },
-  "restPose": {
-    "forearm_r": {
-      "rotate": -34
-    }
-  },
+  "restPose": {"forearm_r": {"rotate": -34.0, "x": 111.0, "y": 19.0}},
   "animations": {
     "blink": {
       "period": 4.2,
