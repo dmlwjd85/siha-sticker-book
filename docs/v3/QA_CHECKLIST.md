@@ -88,3 +88,10 @@
 - [x] 옆머리 고리 안쪽 선 옆 흰 점 제거(hair_back, hair_back_wave) — `side_loop_specks_400.png`
 - [x] 팔꿈치: hand_r 아래 끝의 닫힌 외곽선과 윗팔 토막의 이중 외곽선을 하나의 팔꿈치 윤곽으로 합치고 사이 빈틈·얼룩을 피부로 채움. hand_r 캔버스 확장(x 383, width 192, height 487) — `elbow_*_100.png`, `elbow_*_400.png` (idle/wave, basic/none)
 - [x] 390px 전신 — `phone390_fullbody.png`
+
+## Round 12 — 팔꿈치 바깥선 스무딩 (hand_r)
+- hand_r를 원본(ced7bc7 hand_r)에서 재생성: 윤곽 추출 → 가우시안 스플라인 스무딩(σ10→6, 팔꿈치 타원 영역만, 안쪽 접힘 제외) → 4× 래스터 SDF로 굵기 6.5px 일정 안티앨리어싱 선 (tools/v3/elbow_r12/fix_elbow2.py, bake3.py; 캔버스 384×974 고정, skeleton 변경 없음)
+- 팔 왼쪽 삐친 머리카락 제거(hair_back, hair_back_wave; spike_r12.py), 선 안쪽 옛 선 자국 정리
+- 주의: fix_r11 / elbow_r11 / spike_r12는 비멱등 — 재실행 금지(백업에서 복원 후에만)
+- 전후 비교: docs/v3/qa/v3-review15/
+- [ ] 400%에서 선 굵기 일정, 혹·계단·꺾임 없음 / 아래팔·윗팔 선 연결 / 회색 잔선 없음
