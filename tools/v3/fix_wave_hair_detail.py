@@ -44,23 +44,40 @@ dk = (r[..., 3] > 100) & (c.sum(-1) < 330); lb, n = ndimage.label(cv2.dilate(dk.
 big = np.isin(lb, [i for i in range(1, n + 1) if (dk & (lb == i)).sum() >= 40])
 odd = (r[..., 3] > 0) & ((c[..., 0] - c[..., 1]) < 55) & ~big
 nearest_hair_fill(r, odd); print('odd', int(odd.sum()))
+# 1d) 겨드랑이 선 바로 오른쪽 흰 띠(머리가 시작되는 곳): 선 오른쪽 10px 안 밝은 픽셀 → 옆 머리색
+r = A[1530:1580, 1150:1215]; c = r[..., :3].astype(int); m = np.zeros(c.shape[:2], bool)
+for yy in range(r.shape[0]):
+    xs = np.where((c[yy, 15:50].sum(-1) < 330) & (r[yy, 15:50, 3] > 200))[0]
+    if len(xs) == 0: continue
+    j = xs[-1] + 15
+    seg = slice(j + 1, min(j + 12, r.shape[1])); m[yy, seg] = (c[yy, seg].sum(-1) > 600) | (r[yy, seg, 3] < 200)
+m = cv2.dilate(m.astype(np.uint8), np.ones((1, 3), np.uint8)).astype(bool) & ~((c.sum(-1) < 330) & (r[..., 3] > 200))
+def hair_mid_fill(r, m):
+    c = r[..., :3].astype(int)
+    hair = (r[..., 3] > 200) & (c.sum(-1) > 450) & (c.sum(-1) < 600) & ~m
+    _, (iy, ix) = ndimage.distance_transform_edt(~hair, return_indices=True)
+    f = cv2.GaussianBlur(r[..., :3][iy, ix].astype(np.float32), (0, 0), 1.5)
+    r[..., :3][m] = f[m].astype(np.uint8); r[..., 3][m] = 255
+hair_mid_fill(r, m); print('armpit band', int(m.sum()))
 print('dotted', clean(1180, 1232, 1688, 1798, False))
 # 3) 머리결
 H, W = A.shape[:2]; S = 4
 def strand(pts, col, wmax, alpha):
     lay = np.zeros((H * 0 + 400 * S, 160 * S), np.float32); ox, oy = 1150, 1540
-    pts = np.array(pts, float); t = np.linspace(0, 1, 120)
-    # 2차 베지어(3점)
-    P = ((1 - t) ** 2)[:, None] * pts[0] + (2 * (1 - t) * t)[:, None] * pts[1] + (t ** 2)[:, None] * pts[2]
+    pts = np.array(pts, float); t = np.linspace(0, 1, 160)
+    # 3차 베지어(4점) = 자연스러운 S/C 곡선. 폭은 위쪽이 굵고 아래로 길게 가늘어짐(붓 터치)
+    P = (((1 - t) ** 3)[:, None] * pts[0] + (3 * (1 - t) ** 2 * t)[:, None] * pts[1]
+         + (3 * (1 - t) * t ** 2)[:, None] * pts[2] + (t ** 3)[:, None] * pts[3])
     for i in range(len(P) - 1):
-        w = wmax * np.sin(np.pi * (i / (len(P) - 1)) * 0.98 + 0.01)   # 끝이 가늘게
+        u = i / (len(P) - 1)
+        w = wmax * 1.9 * (u ** 0.35) * ((1 - u) ** 1.3)
         a = ((P[i] - [ox, oy]) * S).astype(int); b = ((P[i + 1] - [ox, oy]) * S).astype(int)
-        cv2.line(lay, tuple(a), tuple(b), 1.0, max(1, int(w * S)), cv2.LINE_AA)
+        cv2.circle(lay, tuple(a), max(1, int(w * S / 2)), 1.0, -1, cv2.LINE_AA)
     lay = cv2.resize(lay, (160, 400), interpolation=cv2.INTER_AREA) * alpha
     reg = A[oy:oy + 400, ox:ox + 160]; ok = (reg[..., 3] > 200) & (reg[..., :3].astype(int).sum(-1) > 450)
     lay *= ok
     reg[..., :3] = (reg[..., :3] * (1 - lay[..., None]) + np.array(col) * lay[..., None]).astype(np.uint8)
-strand([(1196, 1566), (1206, 1625), (1214, 1700)], (214, 126, 144), 2.2, 0.55)
-strand([(1222, 1560), (1230, 1630), (1236, 1720)], (218, 130, 147), 1.8, 0.45)
-strand([(1208, 1575), (1218, 1630), (1224, 1690)], (248, 182, 192), 2.6, 0.5)
+strand([(1197, 1562), (1203, 1600), (1214, 1650), (1212, 1712)], (206, 118, 138), 2.4, 0.5)
+strand([(1224, 1566), (1236, 1610), (1229, 1668), (1240, 1735)], (212, 124, 142), 1.7, 0.38)
+strand([(1209, 1572), (1222, 1612), (1215, 1650), (1224, 1694)], (250, 186, 196), 2.8, 0.42)
 Image.fromarray(A).save(p)

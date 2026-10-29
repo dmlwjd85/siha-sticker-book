@@ -55,3 +55,12 @@
 - [x] 평평한 채움에 머리결 3가닥 이어 그림
 - [x] 외곽선 옆 점선(이중선) 제거, 남은 흰 획·회색 점 제거
 - [x] 시트 20장 전/후 직접 육안 확인, 640프레임 check_frames 통과
+
+## Round 8 (v3-review11)
+- [x] 흔들기 상의 왼쪽 위 소매선 끝 두 갈래 → 한 줄로 가늘게(테이퍼), 옆 짧은 사선 조각 제거 (fix_sleeve_wave.py, basic/none 모두)
+- [x] 겨드랑이 머리 시작점 흰 띠·구멍 메움, 아래 외곽선 가시 정리 (fix_wave_hair_detail 1d, fix_sleeve_wave)
+- [x] 새 머리결: 직선·균일 폭 → 3차 곡선 + 위 굵고 아래로 가늘어지는 붓 터치 (hbw_r6 백업에서 복원 후 재실행)
+- [x] 옆머리 묶음 근처 네모 회분홍 패치(옛 고리 구멍 단색 채움이 번진 것) → 주변 머리색으로 다시 채우고 이음선 제거 (fix_side_hair.py)
+- [x] 머리카락 속 회색 스케치 선(body_upper 얼굴/귀 선이 앞머리 가장자리로 비침) 제거
+- [x] 묶음 고리 외곽선 두께를 몸 외곽선 굵기로 맞춤, 알파 바늘구멍 메움
+- 파이프라인: hbw_r6 복원 → fix_wave_hair_detail → fix_side_hair → fix_sleeve_wave → sync_wave_parts(마지막)
