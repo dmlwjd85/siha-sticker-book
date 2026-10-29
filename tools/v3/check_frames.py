@@ -76,7 +76,7 @@ for tag in ('basic','none'):
     fr=[f for f in L if (f['outfit'] or 'none')==tag]
     rest=load(f'{tag}_idle_000'); RA=rest[...,3]>128
     base_c=comps(RA); base_h=holes(RA,rest); base_S=seams(rest,RA); base_s=0; base_w=linew(rest,RA)
-    sk=json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../public/v3-demo/skeleton.json')))
+    sk=json.load(open(os.environ.get('SIHA_SKEL') or os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../public/v3-demo/skeleton.json')))  # SIHA_SKEL: 다른 데모(v4b) 검사용
     st={'rest_components':base_c,'rest_seams':base_s,'rest_linewidth':base_w,'max_new_hole':0,'max_out_of_box':0,'max_orphan':0,'max_seams':base_s,'linewidth_range':[base_w,base_w],'seam_exempt_total':0,'seam_exempt_frames':0,'seam_exempt_rule':f'분홍 줄, 폭<={SEAM_EX_W}px, 길이<={SEAM_EX_LEN}px, 흔들기 상자 안'}
     H,W=RA.shape; K=FULLW/(sk['skeleton']['width']+2*sk['skeleton']['stagePad']); PAD=sk['skeleton']['stagePad']
     x0,y0,x1,y1=sk['animations']['wave']['changeBox']   # 흔들기 때 바뀌어도 되는 상자(2배 좌표) → 화면 픽셀

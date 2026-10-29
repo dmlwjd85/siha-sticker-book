@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>시하 v4 B안 데모 (레이어)</title>
+<style>
+  html,body{margin:0;background:#fff7fb;font-family:system-ui,sans-serif;color:#6e3d5b;touch-action:manipulation}
+  #wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px}
+  canvas{height:min(78vh,calc(94vw*2560/1760),924px);width:auto;aspect-ratio:1760/2560;background:#fdeef6;border-radius:16px}
+  .bar{display:flex;gap:6px;justify-content:center;width:min(96vw,560px)}
+  button{flex:1;font-size:16px;padding:10px 4px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
+  h1{font-size:16px;margin:4px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>시하 v4 B안 데모 · 부위 레이어 <small>(실험용)</small></h1>
+  <canvas id="c" width="1760" height="2560" aria-label="시하 인형"></canvas>
+  <div class="bar"><button id="wave">👋 흔들기</button><button id="reset">처음대로</button></div>
+</div>
+<script type="module" src="/src/v4bdemo/main.js"></script>
+</body>
+</html>
