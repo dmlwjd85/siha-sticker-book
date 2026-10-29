@@ -80,3 +80,11 @@
 - [x] body_wave_arm_* 손가락 안쪽 선: 요철·연분홍 테두리 제거 (fix_finger_edges.py, SDF 4x 슈퍼샘플)
 - [x] none 겨드랑이 아래 흐린 분홍 그림자 → 주변 머리 톤으로 보정 (fix_r9_armpit.py)
 - 증거: docs/v3/qa/v3-review13/
+
+## Round 11 (9.4 지적 + 팔꿈치 최우선)
+- [x] 겨드랑이(hair_back_wave): 계단 외곽선 SDF 매끈화, 흐린 가운데에 결선 3개+하이라이트 1개, 왼쪽 아래 짧은 세로 선 지움 — `qa/v3-review14/armpit_before_after_400.png`
+- [x] wave 오른쪽 머리 갈래 갈색 점 제거 — `wave_split_dot_400.png`
+- [x] wave 상의 왼쪽 아래 윗선 혹 제거 — `wave_top_bump_400.png`
+- [x] 옆머리 고리 안쪽 선 옆 흰 점 제거(hair_back, hair_back_wave) — `side_loop_specks_400.png`
+- [x] 팔꿈치: hand_r 아래 끝의 닫힌 외곽선과 윗팔 토막의 이중 외곽선을 하나의 팔꿈치 윤곽으로 합치고 사이 빈틈·얼룩을 피부로 채움. hand_r 캔버스 확장(x 383, width 192, height 487) — `elbow_*_100.png`, `elbow_*_400.png` (idle/wave, basic/none)
+- [x] 390px 전신 — `phone390_fullbody.png`

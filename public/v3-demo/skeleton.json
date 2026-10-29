@@ -257,10 +257,10 @@
         "hand_r": {
           "hand_r": {
             "path": "parts/hand_r.png",
-            "x": 389,
+            "x": 383,
             "y": 549,
-            "width": 186,
-            "height": 465
+            "width": 192,
+            "height": 487
           }
         },
         "prop": {
