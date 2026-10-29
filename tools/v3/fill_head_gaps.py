@@ -32,16 +32,16 @@ for n in ['hair_back', 'hair_back_wave']:
         if len(rr) == 0: continue
         col = np.clip(np.median(rr, 0) * np.array([0.95, 0.88, 0.9]), 0, 255).astype(np.uint8)  # 그림자 톤
         a[mj, :3] = col; a[mj, 3] = 255
-    # 고립된 어두운 점: 어두운 픽셀 연결요소 중 작은 것
-    for nn in [n]:
-        rgb = a[..., :3].astype(int)
-        dark = ((rgb.sum(-1) < 330) & (a[..., 3] > 200)).astype(np.uint8)
-        k2, l2, s2, _ = cv2.connectedComponentsWithStats(dark, connectivity=8)
-        cnt = 0
-        for i in range(1, k2):
-            if s2[i, 4] <= 60:
-                mi = l2 == i
-                ring = (cv2.dilate(mi.astype(np.uint8), np.ones((7, 7), np.uint8)) > 0) & ~mi & (a[..., 3] > 200)
-                if ring.sum() < 4: continue
-                a[mi, :3] = np.median(a[ring][:, :3], 0).astype(np.uint8); cnt += 1
+    # 진짜 떨어진 어두운 점만: 작고(≤30px, 한 변 ≤7px) 둘레 4px 안에 다른 어두운 픽셀이 없는 것. 머리결 선(길쭉함)은 보존
+    rgb = a[..., :3].astype(int)
+    dark = ((rgb.sum(-1) < 330) & (a[..., 3] > 200)).astype(np.uint8)
+    k2, l2, s2, _ = cv2.connectedComponentsWithStats(dark, connectivity=8)
+    cnt = 0
+    for i in range(1, k2):
+        x, y, w, h, ar = s2[i]
+        if ar > 30 or max(w, h) > 7: continue
+        mi = l2 == i
+        ring = (cv2.dilate(mi.astype(np.uint8), np.ones((9, 9), np.uint8)) > 0) & ~mi
+        if dark[ring].any() or (a[ring, 3] < 200).any(): continue
+        a[mi, :3] = np.median(a[ring][:, :3], 0).astype(np.uint8); cnt += 1
     Image.fromarray(a).save(p); print(n, 'gap px', int(m.sum()), 'specks', cnt)
