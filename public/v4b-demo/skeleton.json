@@ -5,7 +5,7 @@
   "scale": 2,
   "stagePad": 160,
   "jointOverlap": 24,
-  "note": "v4 B안: 720x1280 생성 몸을 부위로 나눔(관절 12px→2배 24px 겹침), anime_6B 4배 후 2배로 줄임"
+  "note": "v4 B안: 720x1280 생성 몸을 부위로 나눔(관절 12px→2배 24px 겹침), anime_6B 4배 후 2배로 줄임 / 2차: 머리끝 안개·회색점·목 페더·손목 띠·주먹 그늘 수정"
  },
  "bones": [
   {
@@ -144,7 +144,7 @@
    "x": 550,
    "y": 255,
    "width": 332,
-   "height": 460
+   "height": 459
   },
   {
    "name": "hair_front",
@@ -153,7 +153,7 @@
    "x": 511,
    "y": 108,
    "width": 395,
-   "height": 554
+   "height": 553
   }
  ],
  "animations": {
