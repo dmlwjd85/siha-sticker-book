@@ -105,30 +105,30 @@
    "name": "item_skirt",
    "bone": "root",
    "path": "parts/item_skirt.png",
-   "x": 409,
-   "y": 995,
-   "width": 589,
-   "height": 487,
+   "x": 407,
+   "y": 989,
+   "width": 592,
+   "height": 495,
    "item": "skirt"
   },
   {
    "name": "item_dress_body",
    "bone": "root",
    "path": "parts/item_dress_body.png",
-   "x": 441,
-   "y": 682,
-   "width": 632,
-   "height": 864,
+   "x": 439,
+   "y": 680,
+   "width": 633,
+   "height": 874,
    "item": "dress"
   },
   {
    "name": "item_top_body",
    "bone": "root",
    "path": "parts/item_top_body.png",
-   "x": 533,
-   "y": 663,
-   "width": 345,
-   "height": 454,
+   "x": 531,
+   "y": 658,
+   "width": 353,
+   "height": 463,
    "item": "top"
   },
   {
@@ -144,20 +144,20 @@
    "name": "item_dress_sleeve_L",
    "bone": "arm_L",
    "path": "parts/item_dress_sleeve_L.png",
-   "x": 451,
-   "y": 687,
-   "width": 172,
-   "height": 232,
+   "x": 449,
+   "y": 688,
+   "width": 174,
+   "height": 234,
    "item": "dress"
   },
   {
    "name": "item_top_sleeve_L",
    "bone": "arm_L",
    "path": "parts/item_top_sleeve_L.png",
-   "x": 561,
-   "y": 684,
-   "width": 62,
-   "height": 183,
+   "x": 553,
+   "y": 685,
+   "width": 70,
+   "height": 179,
    "item": "top"
   },
   {
@@ -175,7 +175,7 @@
    "path": "parts/item_dress_sleeve_R.png",
    "x": 818,
    "y": 688,
-   "width": 255,
+   "width": 254,
    "height": 442,
    "item": "dress"
   },
@@ -185,8 +185,8 @@
    "path": "parts/item_top_sleeve_R.png",
    "x": 818,
    "y": 690,
-   "width": 60,
-   "height": 213,
+   "width": 66,
+   "height": 211,
    "item": "top"
   },
   {
@@ -225,6 +225,26 @@
    "y": 254,
    "width": 318,
    "height": 460
+  },
+  {
+   "name": "item_dress_neck",
+   "bone": "head",
+   "path": "parts/item_dress_neck.png",
+   "x": 613,
+   "y": 674,
+   "width": 212,
+   "height": 115,
+   "item": "dress"
+  },
+  {
+   "name": "item_top_neck",
+   "bone": "head",
+   "path": "parts/item_top_neck.png",
+   "x": 613,
+   "y": 674,
+   "width": 212,
+   "height": 115,
+   "item": "top"
   },
   {
    "name": "hair_front",
