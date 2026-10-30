@@ -78,10 +78,10 @@
    "name": "leg_L",
    "bone": "root",
    "path": "parts/leg_L.png",
-   "x": 455,
+   "x": 456,
    "y": 1356,
-   "width": 289,
-   "height": 1103
+   "width": 288,
+   "height": 1106
   },
   {
    "name": "leg_R",
@@ -90,16 +90,16 @@
    "x": 696,
    "y": 1356,
    "width": 333,
-   "height": 1132
+   "height": 1135
   },
   {
    "name": "arm_L",
    "bone": "arm_L",
    "path": "parts/arm_L.png",
-   "x": 343,
+   "x": 347,
    "y": 666,
-   "width": 261,
-   "height": 251
+   "width": 257,
+   "height": 266
   },
   {
    "name": "arm_R",
@@ -107,17 +107,17 @@
    "path": "parts/arm_R.png",
    "x": 812,
    "y": 703,
-   "width": 242,
+   "width": 241,
    "height": 521
   },
   {
    "name": "hand_L",
    "bone": "hand_L",
    "path": "parts/hand_L.png",
-   "x": 309,
-   "y": 540,
-   "width": 167,
-   "height": 174
+   "x": 308,
+   "y": 530,
+   "width": 172,
+   "height": 184
   },
   {
    "name": "hand_R",
@@ -125,8 +125,8 @@
    "path": "parts/hand_R.png",
    "x": 976,
    "y": 1166,
-   "width": 154,
-   "height": 180
+   "width": 151,
+   "height": 187
   },
   {
    "name": "torso",
@@ -142,9 +142,9 @@
    "bone": "head",
    "path": "parts/head.png",
    "x": 562,
-   "y": 256,
+   "y": 254,
    "width": 318,
-   "height": 458
+   "height": 460
   },
   {
    "name": "hair_front",
