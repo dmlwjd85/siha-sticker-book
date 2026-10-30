@@ -118,7 +118,7 @@
    "x": 441,
    "y": 682,
    "width": 632,
-   "height": 862,
+   "height": 864,
    "item": "dress"
   },
   {
@@ -144,10 +144,10 @@
    "name": "item_dress_sleeve_L",
    "bone": "arm_L",
    "path": "parts/item_dress_sleeve_L.png",
-   "x": 455,
+   "x": 451,
    "y": 687,
-   "width": 168,
-   "height": 230,
+   "width": 172,
+   "height": 232,
    "item": "dress"
   },
   {
