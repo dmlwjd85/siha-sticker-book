@@ -30,3 +30,12 @@ export function worldTransforms(skel, pose) {
   }
   return out
 }
+/** 아이템 입기/벗기: 이미 입었으면 벗고, 아니면 겹치는(excl) 아이템을 벗기고 입힌다 */
+export function toggleItem(skel, worn, id) {
+  const it = (skel.items || []).find((i) => i.id === id)
+  if (!it) return [...worn]
+  if (worn.includes(id)) return worn.filter((w) => w !== id)
+  return [...worn.filter((w) => !(it.excl || []).includes(w)), id]
+}
+/** 그릴 슬롯: item 표시가 없거나 그 아이템을 입었을 때만 */
+export const visibleSlots = (skel, worn) => skel.slots.filter((s) => !s.item || worn.includes(s.item))

@@ -10,6 +10,8 @@
   canvas{height:min(78vh,calc(94vw*2560/1760),924px);width:auto;aspect-ratio:1760/2560;background:#fdeef6;border-radius:16px}
   .bar{display:flex;gap:6px;justify-content:center;width:min(96vw,560px)}
   button{flex:1;font-size:16px;padding:10px 4px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
+  .items button{font-size:14px;padding:8px 2px}
+  button[aria-pressed=true]{background:#f9c6de;border-color:#d46a9f}
   h1{font-size:16px;margin:4px}
 </style>
 </head>
@@ -17,6 +19,7 @@
 <div id="wrap">
   <h1>시하 v4 B안 데모 · 부위 레이어 <small>(실험용)</small></h1>
   <canvas id="c" width="1760" height="2560" aria-label="시하 인형"></canvas>
+  <div class="bar items" id="items" aria-label="마법소녀 옷·소품"></div>
   <div class="bar"><button id="wave">👋 흔들기</button><button id="reset">처음대로</button></div>
 </div>
 <script type="module" src="/src/v4bdemo/main.js"></script>
