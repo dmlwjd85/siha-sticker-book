@@ -144,10 +144,10 @@
    "name": "item_dress_sleeve_L",
    "bone": "arm_L",
    "path": "parts/item_dress_sleeve_L.png",
-   "x": 471,
+   "x": 470,
    "y": 679,
-   "width": 149,
-   "height": 209,
+   "width": 150,
+   "height": 205,
    "item": "dress"
   },
   {
@@ -176,7 +176,7 @@
    "x": 822,
    "y": 691,
    "width": 147,
-   "height": 240,
+   "height": 229,
    "item": "dress"
   },
   {
@@ -202,10 +202,10 @@
    "name": "item_wand",
    "bone": "hand_R",
    "path": "parts/item_wand.png",
-   "x": 952,
-   "y": 1225,
-   "width": 341,
-   "height": 336,
+   "x": 961,
+   "y": 1224,
+   "width": 343,
+   "height": 339,
    "item": "wand"
   },
   {
@@ -239,10 +239,10 @@
    "name": "item_tiara",
    "bone": "head",
    "path": "parts/item_tiara.png",
-   "x": 585,
-   "y": 169,
-   "width": 270,
-   "height": 151,
+   "x": 583,
+   "y": 172,
+   "width": 273,
+   "height": 154,
    "item": "tiara"
   }
  ],
