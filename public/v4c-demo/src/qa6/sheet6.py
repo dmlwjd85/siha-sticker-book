@@ -20,8 +20,9 @@ for o,l in O:
     f=zl.split()[1];im=Image.new('RGB',(1100,1600),(255,0,255));x=Image.open(f'{o}_{f}.png').convert('RGBA');im.paste(x,(0,0),x)
     rows.append((f'{l} · {zl} (400%)',im.crop(b).resize(((b[2]-b[0])*4,(b[3]-b[1])*4),Image.NEAREST)))
 W=sum(r[1].width for r in rows[:3])+60;hh=max(r[1].height for r in rows)
-Z4=Image.new('RGB',(W,(hh+40)*4),(255,255,255));d=ImageDraw.Draw(Z4)
+H4=ImageFont.truetype(fp,44)
+Z4=Image.new("RGB",(W,(hh+80)*4),(255,255,255));d=ImageDraw.Draw(Z4)
 for i in range(4):
   x=0
-  for t,im in rows[i*3:i*3+3]: d.text((x,i*(hh+40)),t,font=G,fill=0);Z4.paste(im,(x,i*(hh+40)+32));x+=im.width+30
+  for t,im in rows[i*3:i*3+3]: d.text((x,i*(hh+80)+4),t,font=H4,fill=0);Z4.paste(im,(x,i*(hh+80)+64));x+=im.width+30
 Z4.save('/workspace/ssb/public/v4c-demo/src/qa6/zoom400_sheet.png')
