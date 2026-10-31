@@ -5,7 +5,7 @@
 "scale": 2,
 "stagePad": 160,
 "jointOverlap": 24,
-"note": "v4c: c27(GenerateImage) → Real-ESRGAN anime_6B 4배 → 0.5배 LANCZOS(2배) → 초록 키·스필 제거 → 몸·머리·왼팔·오른팔 4영역(몸은 팔·머리 아래 14px 확장, 자른 면 8px 알파 램프). 옷(원피스 dress_c27b, 세일러 sailor_c27e, 크롭 crop_c27e)은 c27 참조로 생성한 그림에서 옷 영역만 마스크(outfit27.py) → 같은 4영역으로 나눠 해당 뼈에 붙임. 티아라·요술봉은 단독 생성 그림 키잉 후 크기 조절·이동만. 덧칠 없음."
+"note": "v4c: c27(GenerateImage) → Real-ESRGAN anime_6B 4배 → 0.5배 LANCZOS(2배) → 초록 키·스필 제거 → 몸·머리·왼팔·오른팔 4영역(몸은 팔·머리 아래 14px 확장, 자른 면 3px 알파 램프, 왼팔 피벗 실제 어깨 관절(506,1090), 겹침띠 외곽선은 팔 레이어만). 옷(원피스 dress_c27b, 세일러 sailor_c27e, 크롭 crop_c27e)은 c27 참조로 생성한 그림에서 옷 영역만 마스크(outfit27.py) → 같은 4영역으로 나눠 해당 뼈에 붙임. 티아라·요술봉은 단독 생성 그림 키잉 후 크기 조절·이동만. 덧칠 없음."
 },
 "bones": [
 {
@@ -35,8 +35,8 @@
 "name": "arm_L",
 "parent": "chest",
 "rest": {
-"x": 480,
-"y": 960
+"x": 506,
+"y": 1090
 }
 },
 {

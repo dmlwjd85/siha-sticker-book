@@ -49,6 +49,8 @@ OUT={'dress':('dress_c27b','d27b2'),'top':('sailor_c27e','saile'),'crop':('crop_
 for it,(src,mk) in OUT.items():
     orgb,_=key(R+f'x4/{src}_x2.png')
     m=np.asarray(Image.open(P+f'src/outfit/o_{mk}.png').getchannel('A').resize((W,H),Image.BILINEAR)).astype(float)/255
+    r_,g_,b_=orgb[...,0],orgb[...,1],orgb[...,2];edge=distance_transform_edt(m>0.5)<5
+    junk=edge&(((g_>b_+5)&(r_>g_))|((orgb.max(2)-orgb.min(2)<15)&(orgb.min(2)>60)&(orgb.max(2)<200)));m=m*~junk  # 옷 마스크 가장자리의 피부·회색 잔여 지우기
     save(f'item_{it}_body',orgb,m*bodyM,'chest',it);save(f'item_{it}_arm_R',orgb,m*armR*cR,'arm_R',it)
     save(f'item_{it}_arm_L',orgb,m*armL*cL,'arm_L',it);save(f'item_{it}_neck',orgb,m*head*cH,'head',it)
 # 소품: 단독 생성 그림을 키잉한 레이어를 크기 조절·이동만 해서 배치
@@ -58,8 +60,8 @@ def prop(name,fn,cx,top,w,bone,item):
 prop('item_tiara','o_tiara.png',350*S,112*S,150*S,'head','tiara')
 prop('item_wand','o_wand.png',600*S,640*S,80*S,'hand_R','wand')
 order=['body','arm_R','arm_L','item_dress_body','item_top_body','item_crop_body','item_dress_arm_R','item_top_arm_R','item_crop_arm_R','item_wand','item_dress_arm_L','item_top_arm_L','item_crop_arm_L','head','item_dress_neck','item_top_neck','item_crop_neck','item_tiara']
-sk={"skeleton":{"width":W,"height":H,"scale":2,"stagePad":160,"jointOverlap":24,"note":"v4c: c27(GenerateImage) → Real-ESRGAN anime_6B 4배 → 0.5배 LANCZOS(2배) → 초록 키·스필 제거 → 몸·머리·왼팔·오른팔 4영역(몸은 팔·머리 아래 14px 확장, 자른 면 8px 알파 램프). 옷(원피스 dress_c27b, 세일러 sailor_c27e, 크롭 crop_c27e)은 c27 참조로 생성한 그림에서 옷 영역만 마스크(outfit27.py) → 같은 4영역으로 나눠 해당 뼈에 붙임. 티아라·요술봉은 단독 생성 그림 키잉 후 크기 조절·이동만. 덧칠 없음."},
- "bones":[{"name":"root","rest":{"x":720,"y":1280}},{"name":"chest","parent":"root","rest":{"x":680,"y":960}},{"name":"head","parent":"chest","rest":{"x":680,"y":890}},{"name":"arm_L","parent":"chest","rest":{"x":480,"y":960}},{"name":"arm_R","parent":"chest","rest":{"x":860,"y":980}},{"name":"hand_L","parent":"arm_L","rest":{"x":250,"y":620}},{"name":"hand_R","parent":"arm_R","rest":{"x":1080,"y":1540}}],
+sk={"skeleton":{"width":W,"height":H,"scale":2,"stagePad":160,"jointOverlap":24,"note":"v4c: c27(GenerateImage) → Real-ESRGAN anime_6B 4배 → 0.5배 LANCZOS(2배) → 초록 키·스필 제거 → 몸·머리·왼팔·오른팔 4영역(몸은 팔·머리 아래 14px 확장, 자른 면 3px 알파 램프, 왼팔 피벗 실제 어깨 관절(506,1090), 겹침띠 외곽선은 팔 레이어만). 옷(원피스 dress_c27b, 세일러 sailor_c27e, 크롭 crop_c27e)은 c27 참조로 생성한 그림에서 옷 영역만 마스크(outfit27.py) → 같은 4영역으로 나눠 해당 뼈에 붙임. 티아라·요술봉은 단독 생성 그림 키잉 후 크기 조절·이동만. 덧칠 없음."},
+ "bones":[{"name":"root","rest":{"x":720,"y":1280}},{"name":"chest","parent":"root","rest":{"x":680,"y":960}},{"name":"head","parent":"chest","rest":{"x":680,"y":890}},{"name":"arm_L","parent":"chest","rest":{"x":506,"y":1090}},{"name":"arm_R","parent":"chest","rest":{"x":860,"y":980}},{"name":"hand_L","parent":"arm_L","rest":{"x":250,"y":620}},{"name":"hand_R","parent":"arm_R","rest":{"x":1080,"y":1540}}],
  "slots":[SL[n] for n in order if n in SL],
  "items":[{"id":"dress","label":"원피스","excl":["top","crop"]},{"id":"top","label":"세일러","excl":["dress","crop"]},{"id":"crop","label":"크롭 상의","excl":["top","dress"]},{"id":"wand","label":"요술봉","excl":[]},{"id":"tiara","label":"티아라","excl":[]}],
  "animations":{"breathe":{"period":4.2,"y":[[0,0],[2.1,-3],[4.2,0]]},"wave":{"bone":"arm_L","period":1.6,"repeat":2,"angle":[[0,0],[0.4,3],[0.8,-1.5],[1.2,3],[1.6,0]],"changeBox":[0,500,700,1300]}}}
