@@ -16,7 +16,7 @@ e=(bd(rim,iterations=2)&~rim)&(rgb.max(2)<140);mm=rgb.min(2)[e]*0.6
 for c in range(3): rgb[...,c][e]=mm
 def poly(pts):
     m=Image.new('L',(W,H),0);ImageDraw.Draw(m).polygon([(x*S,y*S) for x,y in pts],fill=255);return np.asarray(m)>0
-armL=poly([(0,330),(190,330),(198,400),(262,440),(272,455),(256,500),(250,560),(234,620),(0,620)])
+armL=poly([(0,330),(190,330),(198,400),(262,440),(272,455),(268,475),(262,495),(256,515),(253,535),(253,552),(250,566),(248,620),(0,620)])
 armR=poly([(418,470),(440,462),(530,470),(720,470),(720,900),(560,900),(460,800),(412,650),(416,560),(416,520)])
 head=poly([(200,0),(720,0),(720,470),(530,470),(440,462),(418,450),(262,445),(205,385),(195,330)])&~armL
 rest=~(armL|armR|head);d14=bd(rest,iterations=14)
@@ -42,8 +42,8 @@ skin=(rgb.min(2)>150)&(alpha>0.95)&~ERODE
 _,(iy,ix)=distance_transform_edt(~skin,return_indices=True)
 brgb=rgb.copy();brgb[ERODE]=rgb[iy[ERODE],ix[ERODE]];bA[ERODE]=1
 # 배경과 맞닿은 팔 바깥 외곽선 자리는 깔개를 두지 않는다(팔이 움직이면 배경이 보여야 함)
-OUTER=bodyM&armL&(np.arange(H)[:,None]>=950)&bd(bg,iterations=16)&~rest;D=OUTER&(rgb.min(2)<200);brgb[D]=rgb[D];bA[OUTER]=0;K2=bd(D,iterations=7)&OUTER&(alpha>0.5);brgb[K2]=rgb[K2];bA[K2]=alpha[K2];bA[D]=alpha[D]  # 바깥 외곽선은 유지
-save('body',brgb,bA,'chest');save('arm_R',rgb,alpha*armR*cR,'arm_R');cL=np.where(bA>0.99,cL,1.0)  # 깔개가 없는 곳은 팔이 불투명
+OUTER=bodyM&armL&(np.arange(H)[:,None]>=950)&bd(bg,iterations=16)&~rest;KEEP=OUTER&(rgb.min(2)>150)&(alpha>0.95)&bd(rest,iterations=12);DJ=OUTER&(rgb.min(2)<200)&bd(rest,iterations=8);brgb[DJ]=rgb[DJ];bA[OUTER&~KEEP&~DJ]=0  # 교차점 8px만 외곽선 잇기 # 겨드랑이 피부만 깔개로 유지 # 팔 아래 외곽선은 팔 레이어만 소유
+save('body',brgb,bA,'chest');save('arm_R',rgb,alpha*armR*cR,'arm_R');cL=np.where((bA>0.99)&~((rgb.min(2)<200)&(np.arange(H)[:,None]>=1050)),cL,1.0)  # 팔 아래 외곽선은 램프 없음 # 깔개가 없는 곳은 팔이 불투명
 save('arm_L',rgb,alpha*armL*cL,'arm_L');save('head',rgb,alpha*head*cH,'head')
 OUT={'dress':('dress_c27b','d27b2'),'top':('sailor_c27e','saile'),'crop':('crop_c27e','crope')}
 for it,(src,mk) in OUT.items():

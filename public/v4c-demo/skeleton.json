@@ -69,9 +69,9 @@
 "name": "body",
 "bone": "chest",
 "path": "parts/body.png",
-"x": 365,
+"x": 380,
 "y": 566,
-"width": 617,
+"width": 602,
 "height": 1944
 },
 {
@@ -116,9 +116,9 @@
 "name": "item_crop_body",
 "bone": "chest",
 "path": "parts/item_crop_body.png",
-"x": 463,
+"x": 467,
 "y": 899,
-"width": 426,
+"width": 422,
 "height": 376,
 "item": "crop"
 },
