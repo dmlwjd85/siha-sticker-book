@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>시하 v4c 데모 (재구축 레이어)</title>
+<style>
+  html,body{margin:0;background:#fff7fb;font-family:system-ui,sans-serif;color:#6e3d5b;touch-action:manipulation}
+  #wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px}
+  canvas{height:min(78vh,calc(94vw*2560/1760),924px);width:auto;aspect-ratio:1760/2560;background:#fdeef6;border-radius:16px}
+  .bar{display:flex;gap:6px;justify-content:center;width:min(96vw,560px)}
+  button{flex:1;font-size:16px;padding:10px 4px;border-radius:14px;border:2px solid #e9a7c8;background:#fff;color:#6e3d5b}
+  .items button{font-size:14px;padding:8px 2px}
+  button[aria-pressed=true]{background:#f9c6de;border-color:#d46a9f}
+  h1{font-size:16px;margin:4px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>시하 v4c 데모 · 재구축 레이어 <small>(실험용)</small></h1>
+  <canvas id="c" width="1760" height="2560" aria-label="시하 인형"></canvas>
+  <div class="bar items" id="items" aria-label="마법소녀 옷·소품"></div>
+  <div class="bar"><button id="wave">👋 흔들기</button><button id="reset">처음대로</button></div>
+</div>
+<script type="module">
+// v4c 보기: 배포된 v4b 데모 앱(같은 그리기 코드)을 불러오되, 읽는 경로만 v4b-demo/ → v4c-demo/ 로 바꾼다.
+const swap = (u) => typeof u === 'string' ? u.replace('/v4b-demo/', '/v4c-demo/') : u
+const f0 = window.fetch.bind(window); window.fetch = (u, o) => f0(swap(u), o)
+const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')
+Object.defineProperty(HTMLImageElement.prototype, 'src', { get() { return d.get.call(this) }, set(v) { d.set.call(this, swap(v)) } })
+const html = await (await f0('../v4b-demo/')).text()
+const src = html.match(/<script type="module"[^>]*src="([^"]+)"/)[1]
+await import(new URL(src, new URL('../v4b-demo/', location.href)).href)
+</script>
+</body>
+</html>
