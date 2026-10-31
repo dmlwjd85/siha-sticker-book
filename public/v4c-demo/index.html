@@ -29,7 +29,7 @@ const f0 = window.fetch.bind(window); window.fetch = (u, o) => f0(swap(u), o)
 const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')
 Object.defineProperty(HTMLImageElement.prototype, 'src', { get() { return d.get.call(this) }, set(v) { d.set.call(this, swap(v)) } })
 const html = await (await f0('../v4b-demo/')).text()
-const src = html.match(/<script type="module"[^>]*src="([^"]+)"/)[1]
+const src = html.match(/src="([^"]*\/assets\/v4b[^"]*\.js)"/)[1]  // v4b 데모 진입 스크립트
 await import(new URL(src, new URL('../v4b-demo/', location.href)).href)
 </script>
 </body>
