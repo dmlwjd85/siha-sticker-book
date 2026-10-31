@@ -17,7 +17,7 @@ white=(D.min(2)>195)&((D.max(2)-D.min(2))<30)
 seed=band&(hue|(white&binary_dilation(hue,iterations=10)))
 seed=binary_opening(seed,iterations=2)
 lab,n=label(seed);sz=np.bincount(lab.ravel());sz[0]=0
-keep=np.isin(lab,np.nonzero(sz>3000)[0])     # 큰 덩어리(옷)만
+keep=np.isin(lab,np.nonzero(sz>int(os.environ.get('MINSZ','3000')))[0])     # 큰 덩어리(옷)만
 near_=binary_dilation(keep,iterations=8)
 small=np.isin(lab,[i for i in np.nonzero(sz>40)[0] if near_[lab==i].any()])  # 선으로 떨어진 소매단·밑단 띠
 m=binary_fill_holes(keep|small)
