@@ -84,6 +84,25 @@
 "height": 689
 },
 {
+"name": "item_wand",
+"bone": "hand_R",
+"path": "parts/item_wand.png",
+"x": 1023,
+"y": 1284,
+"width": 304,
+"height": 440,
+"item": "wand"
+},
+{
+"name": "arm_R_fing",
+"bone": "arm_R",
+"path": "parts/arm_R_fing.png",
+"x": 1104,
+"y": 1500,
+"width": 81,
+"height": 94
+},
+{
 "name": "arm_L",
 "bone": "arm_L",
 "path": "parts/arm_L.png",
@@ -97,9 +116,9 @@
 "bone": "chest",
 "path": "parts/item_dress_body.png",
 "x": 355,
-"y": 907,
+"y": 909,
 "width": 638,
-"height": 958,
+"height": 962,
 "item": "dress"
 },
 {
@@ -127,9 +146,9 @@
 "bone": "arm_R",
 "path": "parts/item_dress_arm_R.png",
 "x": 824,
-"y": 929,
+"y": 931,
 "width": 143,
-"height": 710,
+"height": 704,
 "item": "dress"
 },
 {
@@ -153,21 +172,11 @@
 "item": "crop"
 },
 {
-"name": "item_wand",
-"bone": "hand_R",
-"path": "parts/item_wand.png",
-"x": 1120,
-"y": 1280,
-"width": 160,
-"height": 478,
-"item": "wand"
-},
-{
 "name": "item_dress_arm_L",
 "bone": "arm_L",
 "path": "parts/item_dress_arm_L.png",
 "x": 417,
-"y": 907,
+"y": 909,
 "width": 128,
 "height": 238,
 "item": "dress"

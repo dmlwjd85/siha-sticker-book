@@ -1,6 +1,7 @@
 # 4단계: Real-ESRGAN 4x(anime_6B) → 0.5배 LANCZOS(=2배) → 초록 키·스필 제거 → 부위·옷 레이어 → skeleton.json(v4b 형식)
 # 지우기·마스크·처리값만 사용. 옷 알파는 720 원본에서 만든 마스크(outfit27.py)를 2배 BILINEAR.
-import json,numpy as np
+import json,os,numpy as np
+WGX,WGY,WW,WANG,WT=[float(os.environ.get(k,v)) for k,v in (('WGX','570'),('WGY','790'),('WW','70'),('WANG','-25'),('WT','0.7'))];WW=int(WW)
 from PIL import Image,ImageDraw
 from scipy.ndimage import binary_dilation as bd, distance_transform_edt
 BAND=40;RAMP=3;S=2;W,H=1440,2560;R='/workspace/siha-v4/rebuild/';P='/workspace/ssb/public/v4c-demo/'
@@ -45,7 +46,7 @@ brgb=rgb.copy();brgb[ERODE]=rgb[iy[ERODE],ix[ERODE]];bA[ERODE]=1
 OUTER=bodyM&armL&(np.arange(H)[:,None]>=950)&bd(bg,iterations=16)&~rest;KEEP=OUTER&(rgb.min(2)>150)&(alpha>0.95)&bd(rest,iterations=12);DJ=OUTER&(rgb.min(2)<200)&bd(rest,iterations=8);brgb[DJ]=rgb[DJ];bA[OUTER&~KEEP&~DJ]=0  # 교차점 8px만 외곽선 잇기 # 겨드랑이 피부만 깔개로 유지 # 팔 아래 외곽선은 팔 레이어만 소유
 save('body',brgb,bA,'chest');save('arm_R',rgb,alpha*armR*cR,'arm_R');cL=np.where((bA>0.99)&~((rgb.min(2)<200)&(np.arange(H)[:,None]>=1050)),cL,1.0)  # 팔 아래 외곽선은 램프 없음 # 깔개가 없는 곳은 팔이 불투명
 save('arm_L',rgb,alpha*armL*cL,'arm_L');save('head',rgb,alpha*head*cH,'head')
-OUT={'dress':('dress_c27b','d27b2'),'top':('sailor_c27e','saile'),'crop':('crop_c27e','crope')}
+OUT={'dress':('dress_c27fL','d27f'),'top':('sailor_c27e','saile'),'crop':('crop_c27e','crope')}
 for it,(src,mk) in OUT.items():
     orgb,_=key(R+f'x4/{src}_x2.png')
     m=np.asarray(Image.open(P+f'src/outfit/o_{mk}.png').getchannel('A').resize((W,H),Image.BILINEAR)).astype(float)/255
@@ -58,8 +59,19 @@ def prop(name,fn,cx,top,w,bone,item):
     im=Image.open(P+f'src/outfit/{fn}');h=round(im.height*w/im.width);im=im.resize((w,h),Image.LANCZOS)
     x0=int(cx-w/2);im.save(P+f'parts/{name}.png');SL[name]=dict(name=name,bone=bone,path=f'parts/{name}.png',x=x0,y=int(top),width=w,height=h,item=item)
 prop('item_tiara','o_tiara.png',350*S,112*S,150*S,'head','tiara')
-prop('item_wand','o_wand.png',600*S,640*S,80*S,'hand_R','wand')
-order=['body','arm_R','arm_L','item_dress_body','item_top_body','item_crop_body','item_dress_arm_R','item_top_arm_R','item_crop_arm_R','item_wand','item_dress_arm_L','item_top_arm_L','item_crop_arm_L','head','item_dress_neck','item_top_neck','item_crop_neck','item_tiara']
+def prop_rot(name,fn,gx,gy,w,ang,t,bone,item):  # 크기·회전·이동만(배치). 봉의 t 지점이 손(gx,gy)에 오도록
+    import math
+    im=Image.open(P+f'src/outfit/{fn}');h=round(im.height*w/im.width);im=im.resize((w,h),Image.LANCZOS)
+    px,py=w/2-w/2,t*h-h/2;r=math.radians(ang)
+    ro=im.rotate(ang,resample=Image.BICUBIC,expand=True)
+    qx=px*math.cos(r)+py*math.sin(r);qy=-px*math.sin(r)+py*math.cos(r)
+    x0=int(gx-(ro.width/2+qx));y0=int(gy-(ro.height/2+qy));ro.save(P+f'parts/{name}.png')
+    SL[name]=dict(name=name,bone=bone,path=f'parts/{name}.png',x=x0,y=y0,width=ro.width,height=ro.height,item=item)
+fing=poly([(552,750),(610,766),(610,808),(556,808)])&armR  # 손가락만 봉 앞 레이어(마스크)
+save('arm_R_fing',rgb,alpha*fing*cR,'arm_R')
+prop_rot('item_wand','o_wand.png',WGX*S,WGY*S,WW*S,WANG,WT,'hand_R','wand')  # 손 뒤로 봉이 지나가고 손(arm_R)이 봉 앞
+
+order=['body','arm_R','item_wand','arm_R_fing','arm_L','item_dress_body','item_top_body','item_crop_body','item_dress_arm_R','item_top_arm_R','item_crop_arm_R','item_dress_arm_L','item_top_arm_L','item_crop_arm_L','head','item_dress_neck','item_top_neck','item_crop_neck','item_tiara']
 sk={"skeleton":{"width":W,"height":H,"scale":2,"stagePad":160,"jointOverlap":24,"note":"v4c: c27(GenerateImage) → Real-ESRGAN anime_6B 4배 → 0.5배 LANCZOS(2배) → 초록 키·스필 제거 → 몸·머리·왼팔·오른팔 4영역(몸은 팔·머리 아래 14px 확장, 자른 면 3px 알파 램프, 왼팔 피벗 실제 어깨 관절(506,1090), 겹침띠 외곽선은 팔 레이어만). 옷(원피스 dress_c27b, 세일러 sailor_c27e, 크롭 crop_c27e)은 c27 참조로 생성한 그림에서 옷 영역만 마스크(outfit27.py) → 같은 4영역으로 나눠 해당 뼈에 붙임. 티아라·요술봉은 단독 생성 그림 키잉 후 크기 조절·이동만. 덧칠 없음."},
  "bones":[{"name":"root","rest":{"x":720,"y":1280}},{"name":"chest","parent":"root","rest":{"x":680,"y":960}},{"name":"head","parent":"chest","rest":{"x":680,"y":890}},{"name":"arm_L","parent":"chest","rest":{"x":506,"y":1090}},{"name":"arm_R","parent":"chest","rest":{"x":860,"y":980}},{"name":"hand_L","parent":"arm_L","rest":{"x":250,"y":620}},{"name":"hand_R","parent":"arm_R","rest":{"x":1080,"y":1540}}],
  "slots":[SL[n] for n in order if n in SL],
