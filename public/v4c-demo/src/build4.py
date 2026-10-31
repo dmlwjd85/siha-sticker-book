@@ -46,7 +46,7 @@ brgb=rgb.copy();brgb[ERODE]=rgb[iy[ERODE],ix[ERODE]];bA[ERODE]=1
 OUTER=bodyM&armL&(np.arange(H)[:,None]>=950)&bd(bg,iterations=16)&~rest;KEEP=OUTER&(rgb.min(2)>150)&(alpha>0.95)&bd(rest,iterations=12);DJ=OUTER&(rgb.min(2)<200)&bd(rest,iterations=8);brgb[DJ]=rgb[DJ];bA[OUTER&~KEEP&~DJ]=0  # 교차점 8px만 외곽선 잇기 # 겨드랑이 피부만 깔개로 유지 # 팔 아래 외곽선은 팔 레이어만 소유
 save('body',brgb,bA,'chest');save('arm_R',rgb,alpha*armR*cR,'arm_R');cL=np.where((bA>0.99)&~((rgb.min(2)<200)&(np.arange(H)[:,None]>=1050)),cL,1.0)  # 팔 아래 외곽선은 램프 없음 # 깔개가 없는 곳은 팔이 불투명
 save('arm_L',rgb,alpha*armL*cL,'arm_L');save('head',rgb,alpha*head*cH,'head')
-OUT={'dress':('dress_c27fL','d27f'),'top':('sailor_c27e','saile'),'crop':('crop_c27e','crope')}
+OUT={'dress':('dress_c27jL','d27j'),'top':('sailor_c27e','saile'),'crop':('crop_c27e','crope')}
 for it,(src,mk) in OUT.items():
     orgb,_=key(R+f'x4/{src}_x2.png')
     m=np.asarray(Image.open(P+f'src/outfit/o_{mk}.png').getchannel('A').resize((W,H),Image.BILINEAR)).astype(float)/255

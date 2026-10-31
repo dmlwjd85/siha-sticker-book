@@ -117,8 +117,8 @@
 "path": "parts/item_dress_body.png",
 "x": 355,
 "y": 909,
-"width": 638,
-"height": 962,
+"width": 640,
+"height": 972,
 "item": "dress"
 },
 {
@@ -175,10 +175,10 @@
 "name": "item_dress_arm_L",
 "bone": "arm_L",
 "path": "parts/item_dress_arm_L.png",
-"x": 417,
+"x": 419,
 "y": 909,
-"width": 128,
-"height": 238,
+"width": 126,
+"height": 240,
 "item": "dress"
 },
 {
