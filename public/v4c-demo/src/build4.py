@@ -25,7 +25,28 @@ bodyM=bodyM|(bd(armL,iterations=8)&bd(head,iterations=8)&(alpha>0.05))  # 팔·�
 ramp=lambda m:np.clip(distance_transform_edt(m)/RAMP,0,1)
 cL,cR,cH=ramp(armL|bg|head),ramp(armR|bg|head),ramp(head|bg|armL|armR)
 SL={}
+def dehalo(rgb,A):  # 외곽선 바로 안쪽의 밝은 분홍 테(흰 테 잔여)를 옆 바탕색으로 바꿈(처리 값)
+    from scipy import ndimage as nd
+    r,g,b=rgb[...,0],rgb[...,1],rgb[...,2];dk=(rgb.sum(2)<150)&(A>0.5)
+    near=nd.binary_dilation(dk,iterations=4)&~dk
+    fr=near&(b>g+3)&(g>186)&(r>240)&(A>0.5);fill=(b>g+3)&(g<186)&(r>240)&~near&(A>0.5)
+    if not fr.any(): return rgb
+    d,(iy,ix)=nd.distance_transform_edt(~fill,return_indices=True);o=rgb.copy();m=fr&(d<=8);o[m]=rgb[iy[m],ix[m]];return o
+def dewhite(rgb,A):  # 팔: 두 선 사이(엄지 주름 등)에 낀 흰빛 피부를 옆 피부색으로(처리 값)
+    from scipy import ndimage as nd
+    r,b=rgb[...,0],rgb[...,2];ok=A>0.5;dk=(rgb.sum(2)<300)|~ok
+    def sh(m,dy,dx): return np.roll(np.roll(m,dy,0),dx,1)
+    sw=np.zeros_like(ok)
+    for dy,dx in((0,1),(1,0),(1,1),(1,-1)):
+        p=np.zeros_like(ok);q=np.zeros_like(ok)
+        for k in(1,2,3,4): p|=sh(dk,k*dy,k*dx);q|=sh(dk,-k*dy,-k*dx)
+        sw|=p&q
+    wh=ok&~dk&sw&(rgb.min(2)>195)&(r-b<40);skin=ok&~dk&(r-b>=44)&(rgb.min(2)>180)
+    if not wh.any(): return rgb
+    d,(iy,ix)=nd.distance_transform_edt(~skin,return_indices=True);o=rgb.copy();m=wh&(d<=10);o[m]=rgb[iy[m],ix[m]];return o
 def save(name,rgb,A,bone,item=None):
+    rgb=dehalo(rgb,A)
+    if name.startswith('arm'): rgb=dewhite(rgb,A)
     A=(A*255).round().astype(np.uint8);ys,xs=np.nonzero(A>0)
     if len(xs)==0: return
     x0,y0,x1,y1=xs.min(),ys.min(),xs.max()+1,ys.max()+1
