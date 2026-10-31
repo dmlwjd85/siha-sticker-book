@@ -67,11 +67,11 @@
 "slots": [
 {
 "name": "body",
-"bone": "root",
+"bone": "chest",
 "path": "parts/body.png",
-"x": 380,
+"x": 365,
 "y": 566,
-"width": 602,
+"width": 617,
 "height": 1944
 },
 {
@@ -94,7 +94,7 @@
 },
 {
 "name": "item_dress_body",
-"bone": "root",
+"bone": "chest",
 "path": "parts/item_dress_body.png",
 "x": 355,
 "y": 907,
@@ -104,7 +104,7 @@
 },
 {
 "name": "item_top_body",
-"bone": "root",
+"bone": "chest",
 "path": "parts/item_top_body.png",
 "x": 361,
 "y": 885,
@@ -114,11 +114,11 @@
 },
 {
 "name": "item_crop_body",
-"bone": "root",
+"bone": "chest",
 "path": "parts/item_crop_body.png",
-"x": 494,
+"x": 463,
 "y": 899,
-"width": 395,
+"width": 426,
 "height": 376,
 "item": "crop"
 },
